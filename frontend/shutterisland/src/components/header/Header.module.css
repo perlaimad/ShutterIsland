@@ -1,0 +1,229 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  padding: 0.8rem 0 0;
+  background: rgba(61, 77, 59, 0.94);
+}
+
+.inner {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.utilityBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 0.2rem;
+  min-height: 1.8rem;
+}
+
+.utilityText {
+  color: var(--text-ghost);
+  font-size: 0.74rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.utilityLinks {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.utilityLinks a,
+.statusChip {
+  min-height: 1.95rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(131, 176, 144, 0.16);
+  background: rgba(106, 124, 100, 0.9);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.utilityLinks a:hover,
+.utilityLinks a:focus-visible {
+  color: var(--glow-peak);
+  border-color: rgba(182, 241, 193, 0.26);
+}
+
+.statusChip {
+  color: var(--teal-glow);
+  box-shadow: inset 0 0 0 1px rgba(182, 241, 193, 0.06);
+}
+
+.heroNav {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.92fr) minmax(0, 1.55fr) minmax(220px, 0.88fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 24px;
+  border: 1px solid rgba(131, 176, 144, 0.16);
+  background: rgba(49, 64, 47, 0.98);
+  box-shadow:
+    0 18px 40px rgba(3, 7, 13, 0.4),
+    inset 0 1px 0 rgba(130, 149, 126, 0.08);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.brandMark {
+  width: 3.1rem;
+  height: 3.1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid rgba(182, 241, 193, 0.24);
+  background: rgba(128, 145, 121, 0.96);
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  box-shadow:
+    inset 0 0 0 1px rgba(130, 149, 126, 0.08),
+    0 0 0 1px rgba(141, 219, 153, 0.06),
+    0 10px 18px rgba(3, 7, 13, 0.24);
+}
+
+.brandCopy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brandName {
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+}
+
+.brandSub {
+  color: var(--text-ghost);
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.nav {
+}
+
+.navList {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.navLink {
+  display: grid;
+  justify-items: start;
+  gap: 0.2rem;
+  min-height: 4.2rem;
+  padding: 0.72rem 0.8rem;
+  border-radius: 18px;
+  border: 1px solid rgba(131, 176, 144, 0.14);
+  background: rgba(106, 124, 100, 0.96);
+  color: var(--text-primary);
+  transition:
+    transform var(--t-fast),
+    border-color var(--t-fast),
+    background var(--t-fast),
+    box-shadow var(--t-fast);
+}
+
+.navLink:hover,
+.navLink:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(182, 241, 193, 0.28);
+  background: rgba(128, 145, 121, 0.98);
+  box-shadow:
+    inset 0 1px 0 rgba(130, 149, 126, 0.08),
+    0 0 0 1px rgba(100, 123, 92, 0.08),
+    0 12px 20px rgba(28, 36, 27, 0.18);
+}
+
+.navCode {
+  color: var(--teal-glow);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.navLabel {
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  align-items: end;
+}
+
+.actionLabel {
+  grid-column: 1 / -1;
+  color: var(--text-ghost);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.actions :global(.btn) {
+  min-height: 42px;
+  padding: 0.58rem 0.9rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+}
+
+@media (max-width: 1100px) {
+  .heroNav {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .utilityBar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .utilityLinks {
+    flex-wrap: wrap;
+  }
+
+  .navList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .navList,
+  .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .brand {
+    align-items: flex-start;
+  }
+}
