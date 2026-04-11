@@ -1,0 +1,79 @@
+:root {
+  --bg-void: #243125;
+  --bg-primary: #31402f;
+  --bg-secondary: #3d4d3b;
+  --bg-tertiary: #495b47;
+  --bg-stone: #5b6d56;
+  --bg-stone-light: #6b7d65;
+
+  --surface-0: rgba(93, 110, 88, 0.94);
+  --surface-1: rgba(106, 124, 100, 0.96);
+  --surface-2: rgba(120, 138, 113, 0.96);
+  --surface-raised: rgba(136, 154, 128, 0.98);
+
+  --border-stone: 1px solid rgba(72, 92, 66, 0.24);
+  --border-carved: 1px solid rgba(72, 92, 66, 0.32);
+  --border-etched: 1px solid rgba(83, 105, 76, 0.4);
+  --border-lit: 1px solid rgba(100, 123, 92, 0.5);
+
+  --moss-deep: #2f412d;
+  --moss-forest: #253523;
+  --moss-mid: #4a6145;
+  --moss-main: #667d60;
+  --moss-bright: #809578;
+  --glow-soft: #8a9e82;
+  --glow-bright: #9db095;
+  --glow-peak: #b2c2a9;
+
+  --teal-deep: #445540;
+  --teal-mid: #61755c;
+  --teal-glow: #83957c;
+  --gold-deep: #4e3f32;
+  --gold-mid: #665244;
+  --gold-main: #7e6756;
+  --gold-bright: #98806c;
+  --gold-glow: #b19b89;
+  --slate-main: #7f9580;
+  --clay-main: #8d5a42;
+  --lichen-main: #5f8c63;
+  --blood-dim: #511923;
+  --blood-mid: #8b243c;
+  --blood-main: #dd5474;
+
+  --text-primary: #ebefe5;
+  --text-secondary: #ced7c7;
+  --text-muted: #a7b39f;
+  --text-ghost: #85937f;
+  --text-dark: #122015;
+
+  --font-display: "Cinzel", Georgia, serif;
+  --font-heading: "Cinzel", Georgia, serif;
+  --font-body: "Space Grotesk", "Segoe UI", sans-serif;
+
+  --max-width: 1280px;
+  --section-pad: clamp(5.5rem, 9vw, 8.5rem) 1.5rem;
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+
+  --shadow-deep: 0 18px 32px rgba(28, 36, 27, 0.18);
+  --shadow-stone: 0 10px 20px rgba(28, 36, 27, 0.14), inset 0 1px 0 rgba(130, 149, 126, 0.06);
+  --glow-moss: 0 0 0 rgba(0, 0, 0, 0);
+  --glow-gold: 0 0 0 rgba(0, 0, 0, 0);
+  --glow-teal: 0 0 0 rgba(0, 0, 0, 0);
+
+  --fs-display: clamp(3.8rem, 8vw, 6.4rem);
+  --fs-hero: clamp(3.2rem, 6.5vw, 5.4rem);
+  --fs-section: clamp(2.3rem, 4.5vw, 3.5rem);
+  --fs-subhead: clamp(1.2rem, 2.3vw, 1.5rem);
+  --fs-body: 1rem;
+  --fs-small: 0.94rem;
+  --fs-tiny: 0.78rem;
+
+  --ease-stone: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-reveal: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-fast: 160ms;
+  --t-med: 260ms;
+  --t-slow: 420ms;
+}

@@ -1,0 +1,2179 @@
+.page {
+  --raspberry: #870058;
+  --cherry: #A4303F;
+  --apricot: #F2D0A4;
+  --papaya: #FFECCC;
+  --celadon: #A2CE9C;
+  --jungle: #45B06C;
+  --cream: #fff8f0;
+  --dark: #1a0c08;
+  --ink: #2e1a10;
+  background: var(--cream);
+  color: var(--ink);
+  width: 100%;
+  min-height: 100vh;
+}
+
+:global(html.dark) .page {
+  --cream: #140b08;
+  --ink: #f2d0a4;
+}
+
+.root {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--cream);
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.ticker {
+  background: var(--cherry);
+  height: 30px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border-bottom: 1.5px solid var(--raspberry);
+}
+
+.tickerTrack {
+  display: flex;
+  white-space: nowrap;
+  animation: scroll-left 32s linear infinite;
+}
+
+.tickerChunk {
+  display: flex;
+  align-items: center;
+}
+
+.tickerItem {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--papaya);
+  padding: 0 6px;
+}
+
+.tickerDiamond {
+  color: var(--apricot);
+  opacity: 0.6;
+  margin: 0 12px;
+  font-size: 12px;
+}
+
+.nav {
+  background: var(--cream);
+  border-bottom: 1px solid rgba(164, 48, 63, 0.2);
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+
+.navBrand {
+  font-family: "Cinzel Decorative", serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--raspberry);
+}
+
+.navLinks {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.navLink {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 3px;
+  color: var(--ink);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  opacity: 0.75;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.navLink:hover {
+  opacity: 1;
+  background: rgba(164, 48, 63, 0.07);
+}
+
+.navCta {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 7px 18px;
+  border-radius: 3px;
+  background: var(--raspberry);
+  color: var(--papaya);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.navCta:hover {
+  background: var(--cherry);
+}
+
+.themeToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(164, 48, 63, 0.32);
+  border-radius: 999px;
+  background: rgba(164, 48, 63, 0.08);
+  color: var(--ink);
+  padding: 4px 8px 4px 5px;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.themeToggleTrack {
+  width: 30px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(164, 48, 63, 0.4);
+  background: rgba(164, 48, 63, 0.16);
+  padding: 1px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.themeToggleThumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--raspberry);
+  transform: translateX(0);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), background 0.18s ease;
+}
+
+.themeToggleText {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  min-width: 30px;
+}
+
+.themeToggleOn {
+  background: rgba(135, 0, 88, 0.15);
+  border-color: rgba(135, 0, 88, 0.5);
+}
+
+.themeToggleOn .themeToggleThumb {
+  transform: translateX(14px);
+  background: var(--cherry);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  height: 560px;
+  background: var(--cream);
+}
+
+.heroMap {
+  border-right: 1px solid rgba(164, 48, 63, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  background: #fdf4e7;
+  position: relative;
+  overflow: hidden;
+}
+
+.mapSvg {
+  width: min(100%, 320px);
+  height: auto;
+  margin: 0 auto;
+}
+
+.mapCorner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--cherry);
+  border-style: solid;
+  opacity: 0.5;
+}
+
+.mapCornerTl {
+  top: 12px;
+  left: 12px;
+  border-width: 2px 0 0 2px;
+}
+
+.mapCornerTr {
+  top: 12px;
+  right: 12px;
+  border-width: 2px 2px 0 0;
+}
+
+.mapCornerBl {
+  bottom: 12px;
+  left: 12px;
+  border-width: 0 0 2px 2px;
+}
+
+.mapCornerBr {
+  bottom: 12px;
+  right: 12px;
+  border-width: 0 2px 2px 0;
+}
+
+.mapCaption {
+  fill: #A4303F;
+  opacity: 0.7;
+}
+
+.mapTarget {
+  filter: drop-shadow(0 0 2px rgba(164, 48, 63, 0.35));
+}
+
+.heroCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  text-align: center;
+  border-right: 1px solid rgba(164, 48, 63, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.heroEyebrow {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: var(--cherry);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.heroTitle {
+  font-family: "Cinzel Decorative", serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.heroTitleSub {
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  color: var(--raspberry);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.dividerOrnament {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 18px;
+  width: 100%;
+  justify-content: center;
+}
+
+.dividerLine {
+  height: 1px;
+  width: 40px;
+  background: rgba(164, 48, 63, 0.25);
+}
+
+.dividerDiamond {
+  width: 6px;
+  height: 6px;
+  background: var(--cherry);
+  transform: rotate(45deg);
+  opacity: 0.5;
+}
+
+.heroDesc {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.9;
+  color: rgba(46, 26, 16, 0.65);
+  margin-bottom: 24px;
+  max-width: 260px;
+  letter-spacing: 0.04em;
+}
+
+.btnArena {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 10px 26px;
+  background: var(--raspberry);
+  color: var(--papaya);
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: background 0.15s;
+  width: 100%;
+  max-width: 220px;
+}
+
+.btnArena:hover {
+  background: var(--cherry);
+}
+
+.spacer {
+  height: 8px;
+}
+
+.btnPlayers {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 9px 26px;
+  background: transparent;
+  color: var(--raspberry);
+  border: 1px solid rgba(135, 0, 88, 0.4);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  width: 100%;
+  max-width: 220px;
+}
+
+.btnPlayers:hover {
+  background: rgba(135, 0, 88, 0.08);
+  border-color: var(--raspberry);
+}
+
+.heroLive {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  gap: 14px;
+  min-height: 100%;
+  max-height: 560px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.liveLabel {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--ink);
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+.liveScreen {
+  background: #1e0d0a;
+  border-radius: 3px;
+  border: 1px solid rgba(164, 48, 63, 0.3);
+  aspect-ratio: 16 / 10;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.liveGridBg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(242, 208, 164, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(242, 208, 164, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.liveVignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(10, 4, 2, 0.7) 100%);
+}
+
+.livePulseWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.pulseRing {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--cherry);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.pulseRing::before,
+.pulseRing::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--cherry);
+  animation: pring 2s ease-out infinite;
+}
+
+.pulseRing::before {
+  inset: -8px;
+  animation-delay: 0s;
+}
+
+.pulseRing::after {
+  inset: -16px;
+  animation-delay: 0.5s;
+}
+
+.pulseDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cherry);
+  animation: blink 1.3s ease-in-out infinite;
+}
+
+.liveBadge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: var(--cherry);
+  color: var(--papaya);
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 3px 8px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  z-index: 3;
+  text-transform: uppercase;
+}
+
+.liveBadgeDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--papaya);
+  animation: blink 1.3s ease-in-out infinite;
+}
+
+.liveViewers {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 236, 204, 0.55);
+  z-index: 3;
+}
+
+.liveArenaText {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: rgba(242, 208, 164, 0.5);
+  text-transform: uppercase;
+  z-index: 2;
+}
+
+.liveMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.liveMetaLeft {
+  display: block;
+}
+
+.liveLower {
+  margin-top: auto;
+  display: grid;
+  gap: 10px;
+}
+
+.winnerPopup {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 3px;
+  border: 1px solid rgba(164, 48, 63, 0.24);
+  background: #fdf4e7;
+  position: relative;
+  overflow: hidden;
+}
+
+.winnerPopup::before {
+  content: none;
+}
+
+.winnerPopup::after {
+  content: none;
+}
+
+.mvpBadge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--papaya);
+  background: var(--cherry);
+  border: 1px solid rgba(135, 0, 88, 0.65);
+  border-radius: 2px;
+  padding: 2px 7px;
+  z-index: 2;
+}
+
+.winnerSilhouette {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(164, 48, 63, 0.3);
+  background: rgba(46, 26, 16, 0.07);
+  display: grid;
+  place-items: center;
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgba(164, 48, 63, 0.14),
+    0 0 14px rgba(164, 48, 63, 0.24),
+    0 0 26px rgba(164, 48, 63, 0.12);
+  animation: winner-halo 2.4s ease-in-out infinite;
+}
+
+.winnerPortrait {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(164, 48, 63, 0.36);
+  object-fit: cover;
+  object-position: center top;
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    0 0 0 1px rgba(164, 48, 63, 0.16),
+    0 0 16px rgba(164, 48, 63, 0.28),
+    0 0 26px rgba(164, 48, 63, 0.13);
+  animation: winner-halo 2.4s ease-in-out infinite;
+}
+
+.silhouetteHead {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: rgba(46, 26, 16, 0.58);
+  position: absolute;
+  top: 10px;
+}
+
+.silhouetteBody {
+  width: 23px;
+  height: 16px;
+  border-radius: 10px 10px 7px 7px;
+  background: rgba(46, 26, 16, 0.58);
+  position: absolute;
+  bottom: 11px;
+}
+
+.winnerDetails {
+  display: grid;
+  gap: 2px;
+  position: relative;
+  z-index: 1;
+}
+
+.winnerKicker {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(46, 26, 16, 0.48);
+}
+
+.winnerDetails strong {
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+}
+
+.winnerRole {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(46, 26, 16, 0.52);
+}
+
+.winnerBet {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--raspberry);
+}
+
+.winnerMetaRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.winnerMetaChip {
+  font-family: "Cinzel", serif;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid rgba(164, 48, 63, 0.34);
+  border-radius: 2px;
+  padding: 2px 6px;
+  color: rgba(46, 26, 16, 0.72);
+  background: rgba(164, 48, 63, 0.08);
+}
+
+.sessionName {
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.06em;
+}
+
+.sessionSub {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  color: rgba(46, 26, 16, 0.5);
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+}
+
+.btnWatch {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 7px 16px;
+  background: var(--cherry);
+  color: var(--papaya);
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.miniStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.miniCard {
+  background: #fdf4e7;
+  border: 1px solid rgba(164, 48, 63, 0.15);
+  border-radius: 2px;
+  padding: 8px 10px;
+}
+
+.miniLabel {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: rgba(46, 26, 16, 0.45);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.miniValue {
+  font-family: "Cinzel", serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.miniValueDanger {
+  font-family: "Cinzel", serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--cherry);
+}
+
+.statusBar {
+  background: #fdf4e7;
+  border-top: 1px solid rgba(164, 48, 63, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 9px 28px;
+  flex-wrap: wrap;
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: rgba(46, 26, 16, 0.5);
+  text-transform: uppercase;
+}
+
+.statDotGreen {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--jungle);
+}
+
+.statVal {
+  font-weight: 700;
+  color: var(--ink);
+  margin-left: 4px;
+}
+
+.statBrand {
+  margin-left: auto;
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  text-transform: uppercase;
+}
+
+.playersOverlay {
+  position: absolute;
+  inset: 0;
+  background: var(--cream);
+  z-index: 10;
+  transform: translateX(100%);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.playersOverlayOpen {
+  transform: translateX(0);
+}
+
+.overlayHeader {
+  background: #fdf4e7;
+  border-bottom: 1px solid rgba(164, 48, 63, 0.2);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.overlayTitleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.overlayEyebrow {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--cherry);
+  text-transform: uppercase;
+}
+
+.overlayTitle {
+  font-family: "Cinzel Decorative", serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+
+.btnClose {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 7px 16px;
+  border: 1px solid rgba(164, 48, 63, 0.35);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--cherry);
+  cursor: pointer;
+}
+
+.overlaySubtitle {
+  text-align: center;
+  padding: 22px 28px 6px;
+}
+
+.overlaySubtitle p {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(46, 26, 16, 0.55);
+  text-transform: uppercase;
+}
+
+.overlaySubtitle strong {
+  font-family: "Cinzel Decorative", serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--raspberry);
+  display: block;
+  margin-top: 4px;
+  letter-spacing: 0.06em;
+}
+
+.playersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  padding: 18px 28px 28px;
+  align-items: stretch;
+}
+
+.pcard {
+  background: #fdf4e7;
+  border: 1px solid rgba(164, 48, 63, 0.18);
+  border-radius: 3px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pcard:hover {
+  border-color: var(--cherry);
+  transform: translateY(-2px);
+}
+
+.pcardLeader {
+  border-color: var(--raspberry);
+}
+
+.pcardTop {
+  padding: 16px 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(164, 48, 63, 0.12);
+}
+
+.pcardAvatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Cinzel", serif;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pcardName {
+  font-family: "Cinzel", serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+
+.pcardRole {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+.pcardNumber {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-family: "Cinzel Decorative", serif;
+  font-size: 20px;
+  font-weight: 700;
+  opacity: 0.07;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.pcardBody {
+  padding: 12px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.pcardStat {
+  margin-bottom: 9px;
+}
+
+.pcardStatRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.pcardStatLabel {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(46, 26, 16, 0.45);
+}
+
+.pcardStatVal {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.barTrack {
+  height: 3px;
+  background: rgba(164, 48, 63, 0.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 3px;
+  border-radius: 2px;
+}
+
+.pcardQuote {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: rgba(46, 26, 16, 0.45);
+  line-height: 1.7;
+  border-left: 2px solid rgba(164, 48, 63, 0.25);
+  padding-left: 8px;
+  margin-bottom: 12px;
+  min-height: 52px;
+}
+
+.pcardTags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  min-height: 58px;
+  align-content: flex-start;
+}
+
+.pcardTag {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 2px;
+  background: rgba(164, 48, 63, 0.08);
+  color: var(--cherry);
+}
+
+.leaderFlag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--raspberry);
+  color: var(--papaya);
+  padding: 2px 8px 2px 6px;
+  border-radius: 2px;
+  margin-bottom: 8px;
+}
+
+.leaderFlagDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--apricot);
+  animation: blink 1.3s infinite;
+}
+
+.btnBet {
+  width: 100%;
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 9px;
+  border-radius: 2px;
+  border: none;
+  background: var(--raspberry);
+  color: var(--papaya);
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-top: auto;
+}
+
+.btnBet:hover {
+  background: var(--cherry);
+}
+
+.metricsRow {
+  display: flex;
+  gap: 16px;
+  margin: 10px 0;
+}
+
+.metricLabel {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(46, 26, 16, 0.4);
+  margin-bottom: 3px;
+}
+
+.metricValue {
+  font-family: "Cinzel", serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes pring {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes winner-halo {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(164, 48, 63, 0.14),
+      0 0 14px rgba(164, 48, 63, 0.24),
+      0 0 26px rgba(164, 48, 63, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(164, 48, 63, 0.26),
+      0 0 20px rgba(164, 48, 63, 0.35),
+      0 0 38px rgba(164, 48, 63, 0.2);
+  }
+}
+
+:global(html.dark) .nav {
+  background: #1a0f0b;
+  border-bottom-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .navLink {
+  color: #f2d0a4;
+}
+
+:global(html.dark) .navLink:hover {
+  background: rgba(164, 48, 63, 0.28);
+}
+
+:global(html.dark) .hero {
+  background: #140b08;
+}
+
+:global(html.dark) .heroMap {
+  background: #1b100c;
+  border-right-color: rgba(164, 48, 63, 0.35);
+}
+
+:global(html.dark) .heroMap svg path,
+:global(html.dark) .heroMap svg line {
+  opacity: 0.85;
+}
+
+:global(html.dark) .heroMap svg circle {
+  opacity: 0.92;
+}
+
+:global(html.dark) .mapSvg text {
+  fill: #ffe6c3;
+}
+
+:global(html.dark) .mapCaption {
+  fill: #ffe6c3;
+  opacity: 0.95;
+}
+
+:global(html.dark) .mapTarget {
+  filter: drop-shadow(0 0 4px rgba(242, 208, 164, 0.35));
+}
+
+:global(html.dark) .mapCorner {
+  border-color: #c04f67;
+  opacity: 0.78;
+}
+
+:global(html.dark) .heroCenter {
+  border-right-color: rgba(164, 48, 63, 0.35);
+}
+
+:global(html.dark) .heroEyebrow {
+  color: #e894a8;
+}
+
+:global(html.dark) .heroTitle {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .heroTitleSub {
+  color: #e894a8;
+}
+
+:global(html.dark) .dividerLine {
+  background: rgba(164, 48, 63, 0.5);
+}
+
+:global(html.dark) .dividerDiamond {
+  background: #d46c84;
+}
+
+:global(html.dark) .heroDesc {
+  color: rgba(255, 236, 204, 0.78);
+}
+
+:global(html.dark) .btnPlayers {
+  color: #f0a5b8;
+  border-color: rgba(164, 48, 63, 0.6);
+}
+
+:global(html.dark) .btnPlayers:hover {
+  background: rgba(164, 48, 63, 0.24);
+}
+
+:global(html.dark) .liveLabel {
+  color: #f2d0a4;
+  opacity: 0.75;
+}
+
+:global(html.dark) .liveScreen {
+  background: #0f0605;
+  border-color: rgba(164, 48, 63, 0.62);
+}
+
+:global(html.dark) .liveGridBg {
+  background-image:
+    linear-gradient(rgba(242, 208, 164, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(242, 208, 164, 0.12) 1px, transparent 1px);
+}
+
+:global(html.dark) .liveVignette {
+  background: radial-gradient(ellipse at center, transparent 36%, rgba(6, 2, 2, 0.88) 100%);
+}
+
+:global(html.dark) .pulseRing {
+  border-color: #d6647d;
+}
+
+:global(html.dark) .pulseRing::before,
+:global(html.dark) .pulseRing::after {
+  border-color: #d6647d;
+}
+
+:global(html.dark) .pulseDot {
+  background: #e67b93;
+}
+
+:global(html.dark) .liveBadge {
+  background: #a4303f;
+  color: #ffeccc;
+}
+
+:global(html.dark) .liveBadgeDot {
+  background: #ffeccc;
+}
+
+:global(html.dark) .liveViewers {
+  color: rgba(255, 236, 204, 0.8);
+}
+
+:global(html.dark) .liveArenaText {
+  color: rgba(242, 208, 164, 0.82);
+}
+
+:global(html.dark) .sessionName {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .sessionSub {
+  color: rgba(255, 236, 204, 0.62);
+}
+
+:global(html.dark) .miniCard {
+  background: #21120d;
+  border-color: rgba(164, 48, 63, 0.48);
+}
+
+:global(html.dark) .winnerPopup {
+  background: #21120d;
+  border-color: rgba(164, 48, 63, 0.5);
+}
+
+:global(html.dark) .winnerPopup::before {
+  content: none;
+}
+
+:global(html.dark) .winnerPopup::after {
+  content: none;
+}
+
+:global(html.dark) .mvpBadge {
+  background: #c3546f;
+  border-color: rgba(255, 236, 204, 0.42);
+  color: #ffeccc;
+}
+
+:global(html.dark) .winnerSilhouette {
+  border-color: rgba(164, 48, 63, 0.58);
+  background: rgba(255, 236, 204, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(245, 166, 183, 0.18),
+    0 0 20px rgba(245, 166, 183, 0.28),
+    0 0 34px rgba(245, 166, 183, 0.16);
+}
+
+:global(html.dark) .winnerPortrait {
+  border-color: rgba(164, 48, 63, 0.62);
+  box-shadow:
+    0 0 0 1px rgba(245, 166, 183, 0.2),
+    0 0 20px rgba(245, 166, 183, 0.3),
+    0 0 34px rgba(245, 166, 183, 0.17);
+}
+
+:global(html.dark) .silhouetteHead,
+:global(html.dark) .silhouetteBody {
+  background: rgba(255, 236, 204, 0.74);
+}
+
+:global(html.dark) .winnerKicker {
+  color: rgba(255, 236, 204, 0.56);
+}
+
+:global(html.dark) .winnerDetails strong {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .winnerRole {
+  color: rgba(255, 236, 204, 0.62);
+}
+
+:global(html.dark) .winnerBet {
+  color: #f5a6b7;
+}
+
+:global(html.dark) .winnerMetaChip {
+  border-color: rgba(164, 48, 63, 0.62);
+  color: rgba(255, 236, 204, 0.78);
+  background: rgba(164, 48, 63, 0.24);
+}
+
+:global(html.dark) .miniLabel {
+  color: rgba(255, 236, 204, 0.58);
+}
+
+:global(html.dark) .miniValue {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .miniValueDanger {
+  color: #f48da4;
+}
+
+:global(html.dark) .statusBar {
+  background: #1a0f0b;
+  border-top-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .statItem {
+  color: rgba(255, 236, 204, 0.68);
+}
+
+:global(html.dark) .statVal {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .statBrand {
+  color: rgba(255, 236, 204, 0.5);
+  text-shadow: none;
+}
+
+:global(html.dark) .playersOverlay {
+  background: #140b08;
+}
+
+:global(html.dark) .overlayHeader {
+  background: #1a0f0b;
+  border-bottom-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .overlayEyebrow {
+  color: #e894a8;
+}
+
+:global(html.dark) .overlayTitle {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .btnClose {
+  color: #f0a5b8;
+  border-color: rgba(164, 48, 63, 0.62);
+}
+
+:global(html.dark) .overlaySubtitle p {
+  color: rgba(255, 236, 204, 0.68);
+}
+
+:global(html.dark) .overlaySubtitle strong {
+  color: #f0a5b8;
+}
+
+:global(html.dark) .pcard {
+  background: #21120d;
+  border-color: rgba(164, 48, 63, 0.48);
+}
+
+:global(html.dark) .pcard:hover {
+  border-color: #c95a73;
+}
+
+:global(html.dark) .pcardLeader {
+  border-color: #d6647d;
+}
+
+:global(html.dark) .pcardTop {
+  border-bottom-color: rgba(164, 48, 63, 0.38);
+}
+
+:global(html.dark) .pcardName {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .pcardNumber {
+  color: #ffe6c3;
+  opacity: 0.12;
+}
+
+:global(html.dark) .pcardStatLabel {
+  color: rgba(255, 236, 204, 0.55);
+}
+
+:global(html.dark) .pcardStatVal {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .barTrack {
+  background: rgba(164, 48, 63, 0.32);
+}
+
+:global(html.dark) .pcardQuote {
+  color: rgba(255, 236, 204, 0.72);
+  border-left-color: rgba(164, 48, 63, 0.62);
+}
+
+:global(html.dark) .pcardTag {
+  background: rgba(164, 48, 63, 0.28);
+  color: #ffd2dc;
+}
+
+:global(html.dark) .metricLabel {
+  color: rgba(255, 236, 204, 0.52);
+}
+
+:global(html.dark) .metricValue {
+  color: #ffe6c3;
+}
+
+@media (max-width: 1024px) {
+  .root {
+    grid-template-rows: auto auto auto auto;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .heroMap,
+  .heroCenter {
+    border-right: none;
+    border-bottom: 1px solid rgba(164, 48, 63, 0.18);
+  }
+
+  .heroLive {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 720px) {
+  .nav {
+    padding: 0 14px;
+    height: auto;
+    min-height: 50px;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .navLinks {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding-bottom: 8px;
+  }
+
+  .themeToggle {
+    order: 4;
+  }
+
+  .heroCenter,
+  .heroMap,
+  .heroLive {
+    padding: 16px;
+  }
+
+  .winnerPopup {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .statusBar {
+    gap: 12px;
+    padding: 9px 14px;
+  }
+
+  .statBrand {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .overlayHeader {
+    padding: 12px 14px;
+  }
+
+  .playersGrid {
+    padding: 14px;
+  }
+}
+
+.obstacleBlock {
+  fill: #fdf4e7;
+  stroke: rgba(164, 48, 63, 0.28);
+  stroke-width: 0.8;
+}
+
+.obstacleLine {
+  stroke: rgba(164, 48, 63, 0.18);
+  stroke-width: 0.5;
+}
+
+.markerCore {
+  fill: #fff8f0;
+}
+
+.markLabel {
+  fill: rgba(46, 26, 16, 0.45);
+}
+
+.countdownBlock {
+  width: 100%;
+  max-width: 220px;
+  border: 1px solid rgba(135, 0, 88, 0.3);
+  border-radius: 2px;
+  padding: 9px 14px;
+  margin-bottom: 16px;
+  background: rgba(135, 0, 88, 0.05);
+  text-align: center;
+}
+
+.countdownBlock .heroEyebrow {
+  margin-bottom: 0;
+}
+
+.countdownDigits {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 24px;
+  color: var(--ink);
+  letter-spacing: 0.06em;
+  margin-top: 4px;
+}
+
+.countdownDigits em {
+  font-style: normal;
+  font-size: 11px;
+  color: rgba(46, 26, 16, 0.45);
+  margin: 0 2px;
+}
+
+.flash {
+  animation: flash-alert 0.55s ease-in-out infinite;
+}
+
+.livePlayerCard {
+  background: #fdf4e7;
+  border: 1px solid rgba(164, 48, 63, 0.15);
+  border-radius: 2px;
+  padding: 8px 10px;
+}
+
+.livePlayerHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.livePlayerName {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.livePlayerStat {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 8px;
+  color: rgba(46, 26, 16, 0.45);
+}
+
+.livePlayerTopBet {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 8px;
+  color: rgba(46, 26, 16, 0.45);
+  margin-bottom: 4px;
+}
+
+.livePlayerMeta {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.livePlayerPill {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 8px;
+  padding: 2px 5px;
+  border-radius: 2px;
+  border: 1px solid rgba(135, 0, 88, 0.35);
+  color: var(--raspberry);
+}
+
+.livePlayerBarTrack {
+  height: 2px;
+  background: rgba(164, 48, 63, 0.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.livePlayerBarFill {
+  height: 100%;
+}
+
+.elimLog {
+  border-top: 1px solid rgba(164, 48, 63, 0.15);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.elimLogLabel {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(46, 26, 16, 0.4);
+  margin-bottom: 6px;
+}
+
+.elimEntry {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 9px;
+  color: rgba(46, 26, 16, 0.45);
+  padding: 2px 0;
+}
+
+.elimEntryName {
+  color: var(--cherry);
+}
+
+.statsStrip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid rgba(164, 48, 63, 0.15);
+  border-bottom: 1px solid rgba(164, 48, 63, 0.15);
+  background: #fdf4e7;
+}
+
+.statsStripItem {
+  padding: 18px 20px;
+  text-align: center;
+  border-right: 1px solid rgba(164, 48, 63, 0.12);
+}
+
+.statsStripItem:last-child {
+  border-right: none;
+}
+
+.statsStripValue {
+  font-family: "Cinzel Decorative", serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.statsStripLabel {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(46, 26, 16, 0.45);
+  margin-top: 4px;
+}
+
+.calendarSection {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  border-bottom: 1px solid rgba(164, 48, 63, 0.15);
+  background: var(--cream);
+}
+
+.calendarPanel {
+  border-right: 1px solid rgba(164, 48, 63, 0.15);
+  padding: 20px;
+}
+
+.calendarHead {
+  margin-bottom: 12px;
+}
+
+.calendarNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.calNavBtn {
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 1px solid rgba(164, 48, 63, 0.28);
+  border-radius: 2px;
+  color: rgba(46, 26, 16, 0.55);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.calNavBtn:hover {
+  background: rgba(164, 48, 63, 0.07);
+}
+
+.calMonthLabel {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--ink);
+  min-width: 110px;
+  text-align: center;
+}
+
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.calDayHeader {
+  font-family: "Cinzel", serif;
+  font-size: 7px;
+  letter-spacing: 0.15em;
+  color: rgba(46, 26, 16, 0.4);
+  text-align: center;
+  padding: 5px 0;
+}
+
+.calDay,
+.calDayEmpty {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 5px;
+  font-family: "Share Tech Mono", monospace;
+  font-size: 10px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+}
+
+.calDay {
+  color: rgba(46, 26, 16, 0.62);
+  background: transparent;
+  border-color: rgba(164, 48, 63, 0.12);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.calDayEmpty {
+  cursor: default;
+}
+
+.hasSession {
+  color: var(--ink);
+  cursor: pointer;
+  border-color: rgba(164, 48, 63, 0.28);
+  background: rgba(164, 48, 63, 0.05);
+}
+
+.hasSession:hover {
+  border-color: rgba(164, 48, 63, 0.3);
+  background: rgba(164, 48, 63, 0.04);
+}
+
+.isToday {
+  color: var(--cherry);
+}
+
+.isLive {
+  color: var(--raspberry);
+  font-weight: 700;
+}
+
+.isSelected {
+  border-color: var(--cherry);
+  background: rgba(164, 48, 63, 0.07);
+}
+
+.calPips {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 3px;
+}
+
+.calPip {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+.calPipLive {
+  background: var(--raspberry);
+}
+
+.calPipOpen {
+  background: var(--jungle);
+}
+
+.calPipUpcoming {
+  background: var(--cherry);
+  opacity: 0.6;
+}
+
+.calPipClosed {
+  background: rgba(46, 26, 16, 0.25);
+}
+
+.sessionListPanel {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 420px;
+}
+
+.sessionListTitle {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(46, 26, 16, 0.45);
+  margin-bottom: 12px;
+}
+
+.sessionEntry {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(164, 48, 63, 0.15);
+  border-radius: 2px;
+  background: #fdf4e7;
+  margin-bottom: 7px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.sessionEntry:hover {
+  border-color: rgba(164, 48, 63, 0.45);
+}
+
+.sessionEntryLive {
+  border-left: 2px solid var(--raspberry);
+  border-radius: 0 2px 2px 0;
+}
+
+.sessionEntryId {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  color: rgba(46, 26, 16, 0.4);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.sessionEntryDate {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 12px;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+
+.sessionEntryTime {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 9px;
+  color: rgba(46, 26, 16, 0.45);
+}
+
+.sessionBadge {
+  font-family: "Cinzel", serif;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 2px;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.sessionBadgeLive {
+  background: var(--raspberry);
+  color: var(--papaya);
+}
+
+.sessionBadgeOpen {
+  border: 1px solid var(--jungle);
+  color: var(--jungle);
+  background: transparent;
+}
+
+.sessionBadgeUpcoming {
+  border: 1px solid rgba(164, 48, 63, 0.45);
+  color: var(--cherry);
+  background: transparent;
+}
+
+.sessionBadgeClosed {
+  color: rgba(46, 26, 16, 0.38);
+  background: transparent;
+}
+
+.sessionPool {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 8px;
+  color: var(--raspberry);
+  text-align: right;
+}
+
+.pcardOddsRow {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 6px;
+}
+
+.pcardChip {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 8px;
+  border: 1px solid rgba(164, 48, 63, 0.34);
+  border-radius: 2px;
+  padding: 2px 6px;
+  color: rgba(46, 26, 16, 0.72);
+  background: rgba(164, 48, 63, 0.08);
+}
+
+@keyframes flash-alert {
+  0%,
+  100% {
+    color: var(--cherry);
+  }
+  50% {
+    color: var(--raspberry);
+  }
+}
+
+:global(html.dark) .heroMap svg .obstacleBlock {
+  fill: #21120d;
+}
+
+:global(html.dark) .heroMap svg .markerCore {
+  fill: #140b08;
+}
+
+:global(html.dark) .markLabel {
+  fill: rgba(255, 236, 204, 0.55);
+}
+
+:global(html.dark) .countdownBlock {
+  background: rgba(164, 48, 63, 0.1);
+  border-color: rgba(164, 48, 63, 0.55);
+}
+
+:global(html.dark) .countdownDigits {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .countdownDigits em {
+  color: rgba(255, 236, 204, 0.45);
+}
+
+:global(html.dark) .livePlayerCard {
+  background: #21120d;
+  border-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .livePlayerStat,
+:global(html.dark) .livePlayerTopBet {
+  color: rgba(255, 236, 204, 0.5);
+}
+
+:global(html.dark) .livePlayerPill {
+  border-color: rgba(164, 48, 63, 0.5);
+  color: #f48da4;
+}
+
+:global(html.dark) .livePlayerBarTrack {
+  background: rgba(164, 48, 63, 0.3);
+}
+
+:global(html.dark) .elimLog {
+  border-top-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .elimLogLabel {
+  color: rgba(255, 236, 204, 0.45);
+}
+
+:global(html.dark) .elimEntry {
+  color: rgba(255, 236, 204, 0.5);
+}
+
+:global(html.dark) .elimEntryName {
+  color: #f48da4;
+}
+
+:global(html.dark) .statsStrip {
+  background: #1a0f0b;
+  border-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .statsStripItem {
+  border-right-color: rgba(164, 48, 63, 0.35);
+}
+
+:global(html.dark) .statsStripValue {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .statsStripLabel {
+  color: rgba(255, 236, 204, 0.5);
+}
+
+:global(html.dark) .calendarSection {
+  border-bottom-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .calendarPanel {
+  border-right-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .calNavBtn {
+  border-color: rgba(164, 48, 63, 0.55);
+  color: rgba(255, 236, 204, 0.55);
+}
+
+:global(html.dark) .calMonthLabel {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .calDayHeader {
+  color: rgba(255, 236, 204, 0.45);
+}
+
+:global(html.dark) .calDay {
+  color: rgba(255, 236, 204, 0.55);
+  border-color: rgba(164, 48, 63, 0.25);
+}
+
+:global(html.dark) .hasSession {
+  color: #ffe6c3;
+  border-color: rgba(164, 48, 63, 0.48);
+  background: rgba(164, 48, 63, 0.18);
+}
+
+:global(html.dark) .isToday {
+  color: #f48da4;
+}
+
+:global(html.dark) .isLive {
+  color: #f0a5b8;
+}
+
+:global(html.dark) .isSelected {
+  background: rgba(164, 48, 63, 0.18);
+  border-color: #d6647d;
+}
+
+:global(html.dark) .calPipClosed {
+  background: rgba(255, 236, 204, 0.22);
+}
+
+:global(html.dark) .sessionListPanel {
+  background: transparent;
+}
+
+:global(html.dark) .sessionListTitle {
+  color: rgba(255, 236, 204, 0.5);
+}
+
+:global(html.dark) .sessionEntry {
+  background: #21120d;
+  border-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .sessionEntry:hover {
+  border-color: #c95a73;
+}
+
+:global(html.dark) .sessionEntryLive {
+  border-left-color: #f0a5b8;
+}
+
+:global(html.dark) .sessionEntryId {
+  color: rgba(255, 236, 204, 0.45);
+}
+
+:global(html.dark) .sessionEntryDate {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .sessionEntryTime {
+  color: rgba(255, 236, 204, 0.45);
+}
+
+:global(html.dark) .sessionBadgeClosed {
+  color: rgba(255, 236, 204, 0.35);
+}
+
+:global(html.dark) .sessionPool {
+  color: #f48da4;
+}
+
+:global(html.dark) .pcardChip {
+  border-color: rgba(164, 48, 63, 0.62);
+  color: rgba(255, 236, 204, 0.78);
+  background: rgba(164, 48, 63, 0.24);
+}
+
+@media (max-width: 1024px) {
+  .statsStrip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .calendarSection {
+    grid-template-columns: 1fr;
+  }
+
+  .calendarPanel {
+    border-right: none;
+    border-bottom: 1px solid rgba(164, 48, 63, 0.15);
+  }
+}
