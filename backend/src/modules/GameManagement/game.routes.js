@@ -3,6 +3,7 @@ import {
   getChallengeSequence,
   getGameEvents,
   getLevelProgression,
+  getPerformanceFlow,
   getSessionTimer,
   pauseSessionTimer,
   progressToNextLevel,
@@ -129,4 +130,9 @@ gameManagementRouter.post(
 gameManagementRouter.post(
   "/game-management/sessions/:sessionId/participants/actions",
   handleChallengeAction((sessionId, body) => recordParticipantAction(sessionId, body))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/performance/flow",
+  handleChallengeAction((sessionId) => getPerformanceFlow(sessionId))
 );

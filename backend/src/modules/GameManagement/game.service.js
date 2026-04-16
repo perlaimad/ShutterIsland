@@ -67,6 +67,23 @@ const asPlainObject = (value) => {
   return value;
 };
 
+const roundTo = (value, digits = 2) => {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+};
+
+const asPercentage = (part, total) => {
+  if (!total) {
+    return 0;
+  }
+
+  return roundTo((part / total) * 100);
+};
+
 const toIsoString = (value) => {
   if (!value) {
     return null;
@@ -764,6 +781,197 @@ export const recordParticipantAction = async (sessionId, input = {}) => {
   } catch (error) {
     await connection.rollback();
     throw error;
+  } finally {
+    connection.release();
+  }
+};
+
+export const getPerformanceFlow = async (sessionId) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const [sessionRows] = await connection.execute(
+      `SELECT
+         session_id,
+         session_code,
+         status,
+         created_at,
+         started_at,
+         ended_at,
+         CASE
+           WHEN started_at IS NULL THEN 0
+           ELSE TIMESTAMPDIFF(SECOND, started_at, COALESCE(ended_at, NOW()))
+         END AS elapsed_seconds
+       FROM game_session
+       WHERE session_id = ?
+       LIMIT 1`,
+      [sessionId]
+    );
+    const session = sessionRows[0] ?? null;
+
+    if (!session) {
+      return null;
+    }
+
+    const [roomRows] = await connection.execute(
+      `SELECT
+         sr.session_room_id,
+         sr.room_index,
+         sr.status,
+         sr.started_at,
+         sr.ended_at,
+         sr.min_eliminations_to_unlock,
+         r.name AS room_name,
+         r.difficulty_level,
+         r.time_limit_seconds,
+         CASE
+           WHEN sr.started_at IS NULL THEN 0
+           ELSE TIMESTAMPDIFF(SECOND, sr.started_at, COALESCE(sr.ended_at, NOW()))
+         END AS elapsed_seconds,
+         COUNT(DISTINCT rc.challenge_id) AS challenge_count,
+         COUNT(DISTINCT CASE WHEN ev_challenge.event_id IS NOT NULL THEN rc.challenge_id END) AS triggered_challenge_count,
+         COUNT(DISTINCT e.elimination_id) AS elimination_count,
+         COUNT(DISTINCT ev.event_id) AS event_count
+       FROM session_room sr
+       JOIN room r ON r.room_id = sr.room_id
+       LEFT JOIN room_challenge rc ON rc.room_id = sr.room_id
+       LEFT JOIN challenge c ON c.challenge_id = rc.challenge_id
+       LEFT JOIN environment_event ev_challenge
+         ON ev_challenge.session_id = sr.session_id
+        AND ev_challenge.session_room_id = sr.session_room_id
+        AND JSON_UNQUOTE(JSON_EXTRACT(ev_challenge.payload_json, '$.challengeId')) = CAST(c.challenge_id AS CHAR)
+       LEFT JOIN elimination e ON e.session_room_id = sr.session_room_id
+       LEFT JOIN environment_event ev ON ev.session_room_id = sr.session_room_id
+       WHERE sr.session_id = ?
+       GROUP BY
+         sr.session_room_id,
+         sr.room_index,
+         sr.status,
+         sr.started_at,
+         sr.ended_at,
+         sr.min_eliminations_to_unlock,
+         r.name,
+         r.difficulty_level,
+         r.time_limit_seconds
+       ORDER BY sr.room_index ASC`,
+      [sessionId]
+    );
+
+    const [participantRows] = await connection.execute(
+      `SELECT
+         COUNT(*) AS total_participants,
+         SUM(CASE WHEN is_alive = 1 THEN 1 ELSE 0 END) AS alive_count,
+         SUM(CASE WHEN is_alive = 0 THEN 1 ELSE 0 END) AS eliminated_count,
+         AVG(
+           CASE
+             WHEN joined_at IS NULL THEN NULL
+             ELSE TIMESTAMPDIFF(SECOND, joined_at, COALESCE(eliminated_at, NOW()))
+           END
+         ) AS average_survival_seconds
+       FROM session_player
+       WHERE session_id = ?`,
+      [sessionId]
+    );
+
+    const [eventRows] = await connection.execute(
+      `SELECT event_type, COUNT(*) AS event_count
+       FROM environment_event
+       WHERE session_id = ?
+       GROUP BY event_type
+       ORDER BY event_count DESC, event_type ASC`,
+      [sessionId]
+    );
+
+    const participantStats = participantRows[0] ?? {};
+    const totalParticipants = Number(participantStats.total_participants ?? 0);
+    const aliveCount = Number(participantStats.alive_count ?? 0);
+    const eliminatedCount = Number(participantStats.eliminated_count ?? 0);
+    const averageSurvivalSeconds = roundTo(Number(participantStats.average_survival_seconds ?? 0));
+
+    const rooms = roomRows.map((room) => {
+      const timeLimitSeconds = room.time_limit_seconds === null
+        ? null
+        : Number(room.time_limit_seconds);
+      const elapsedSeconds = Number(room.elapsed_seconds ?? 0);
+      const challengeCount = Number(room.challenge_count ?? 0);
+      const triggeredChallengeCount = Number(room.triggered_challenge_count ?? 0);
+      const pacePercent = timeLimitSeconds && elapsedSeconds
+        ? roundTo(Math.min(timeLimitSeconds / elapsedSeconds, 1) * 100)
+        : 0;
+
+      return {
+        sessionRoomId: Number(room.session_room_id),
+        roomIndex: Number(room.room_index),
+        roomName: room.room_name,
+        roomStatus: room.status,
+        difficultyLevel: Number(room.difficulty_level),
+        startedAt: toIsoString(room.started_at),
+        endedAt: toIsoString(room.ended_at),
+        timeLimitSeconds,
+        elapsedSeconds,
+        pacePercent,
+        challengeCount,
+        triggeredChallengeCount,
+        challengeTriggerRate: asPercentage(triggeredChallengeCount, challengeCount),
+        eliminationCount: Number(room.elimination_count ?? 0),
+        eventCount: Number(room.event_count ?? 0),
+        minEliminationsToUnlock: Number(room.min_eliminations_to_unlock),
+        metEliminationRequirement:
+          Number(room.elimination_count ?? 0) >= Number(room.min_eliminations_to_unlock)
+      };
+    });
+
+    const completedRooms = rooms.filter((room) => room.roomStatus === ROOM_STATUS.COMPLETED).length;
+    const activeRooms = rooms.filter((room) => room.roomStatus === ROOM_STATUS.ACTIVE).length;
+    const totalRooms = rooms.length;
+    const totalChallenges = rooms.reduce((sum, room) => sum + room.challengeCount, 0);
+    const totalTriggeredChallenges = rooms.reduce(
+      (sum, room) => sum + room.triggeredChallengeCount,
+      0
+    );
+    const roomsWithPace = rooms.filter((room) => room.pacePercent > 0);
+    const averagePacePercent = roomsWithPace.length
+      ? roundTo(roomsWithPace.reduce((sum, room) => sum + room.pacePercent, 0) / roomsWithPace.length)
+      : 0;
+    const completionRate = asPercentage(completedRooms, totalRooms);
+    const survivalRate = asPercentage(aliveCount, totalParticipants);
+    const challengeTriggerRate = asPercentage(totalTriggeredChallenges, totalChallenges);
+    const overallScore = roundTo(
+      (completionRate * 0.35)
+      + (survivalRate * 0.25)
+      + (challengeTriggerRate * 0.25)
+      + (averagePacePercent * 0.15)
+    );
+
+    return {
+      sessionId: Number(session.session_id),
+      sessionCode: session.session_code,
+      sessionStatus: session.status,
+      startedAt: toIsoString(session.started_at),
+      endedAt: toIsoString(session.ended_at),
+      elapsedSeconds: Number(session.elapsed_seconds ?? 0),
+      summary: {
+        overallScore,
+        completionRate,
+        survivalRate,
+        challengeTriggerRate,
+        averagePacePercent,
+        totalRooms,
+        completedRooms,
+        activeRooms,
+        totalChallenges,
+        totalTriggeredChallenges,
+        totalParticipants,
+        aliveCount,
+        eliminatedCount,
+        averageSurvivalSeconds
+      },
+      rooms,
+      eventFlow: eventRows.map((event) => ({
+        eventType: event.event_type,
+        count: Number(event.event_count)
+      }))
+    };
   } finally {
     connection.release();
   }
