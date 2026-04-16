@@ -1,10 +1,13 @@
 import { Router } from "express";
 import {
   getChallengeSequence,
+  getGameEvents,
   getLevelProgression,
   getSessionTimer,
   pauseSessionTimer,
   progressToNextLevel,
+  recordGameEvent,
+  recordParticipantAction,
   resumeSessionTimer,
   startSessionTimer,
   stopSessionTimer,
@@ -59,7 +62,7 @@ const handleChallengeAction = (action) => async (req, res) => {
   }
 
   try {
-    const result = await action(sessionId, req.body);
+    const result = await action(sessionId, req.body, req);
     return sendChallengeResult(res, result);
   } catch (error) {
     return res.status(error.statusCode ?? 500).json({
@@ -111,4 +114,19 @@ gameManagementRouter.get(
 gameManagementRouter.post(
   "/game-management/sessions/:sessionId/levels/progress",
   handleChallengeAction((sessionId, body) => progressToNextLevel(sessionId, body))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/events",
+  handleChallengeAction((sessionId, _body, req) => getGameEvents(sessionId, req.query))
+);
+
+gameManagementRouter.post(
+  "/game-management/sessions/:sessionId/events",
+  handleChallengeAction((sessionId, body) => recordGameEvent(sessionId, body))
+);
+
+gameManagementRouter.post(
+  "/game-management/sessions/:sessionId/participants/actions",
+  handleChallengeAction((sessionId, body) => recordParticipantAction(sessionId, body))
 );
