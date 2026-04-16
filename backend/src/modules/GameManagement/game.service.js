@@ -429,6 +429,18 @@ const findParticipant = async (connection, sessionId, playerId) => {
   return rows[0] ?? null;
 };
 
+const findElimination = async (connection, sessionId, playerId) => {
+  const [rows] = await connection.execute(
+    `SELECT elimination_id
+     FROM elimination
+     WHERE session_id = ? AND player_id = ?
+     LIMIT 1`,
+    [sessionId, playerId]
+  );
+
+  return rows[0] ?? null;
+};
+
 const insertAuditLog = async (connection, {
   managerId,
   sessionId,
@@ -500,6 +512,23 @@ const buildEventResponse = (row) => ({
   createdAt: toIsoString(row.created_at)
 });
 
+const buildEliminationResponse = (row) => ({
+  eliminationId: Number(row.elimination_id),
+  sessionId: Number(row.session_id),
+  sessionRoomId: Number(row.session_room_id),
+  roomIndex: Number(row.room_index),
+  roomName: row.room_name,
+  player: {
+    playerId: Number(row.player_id),
+    playerName: row.display_name,
+    slotNumber: Number(row.slot_number),
+    finalRank: row.final_rank === null ? null : Number(row.final_rank)
+  },
+  reason: row.reason,
+  eliminatedAt: toIsoString(row.ts),
+  sessionPlayerEliminatedAt: toIsoString(row.eliminated_at)
+});
+
 export const getGameEvents = async (sessionId, options = {}) => {
   const limitInput = asPositiveInteger(options.limit);
   const limit = Math.min(limitInput ?? 50, 100);
@@ -543,6 +572,205 @@ export const getGameEvents = async (sessionId, options = {}) => {
       sessionCode: session.session_code,
       events: rows.map(buildEventResponse)
     };
+  } finally {
+    connection.release();
+  }
+};
+
+export const getEliminations = async (sessionId) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const session = await findGameSession(connection, sessionId);
+
+    if (!session) {
+      return null;
+    }
+
+    const [rows] = await connection.execute(
+      `SELECT
+         e.elimination_id,
+         e.session_id,
+         e.session_room_id,
+         e.player_id,
+         e.reason,
+         e.ts,
+         sr.room_index,
+         r.name AS room_name,
+         sp.slot_number,
+         sp.eliminated_at,
+         sp.final_rank,
+         p.display_name
+       FROM elimination e
+       JOIN session_room sr ON sr.session_room_id = e.session_room_id
+       JOIN room r ON r.room_id = sr.room_id
+       JOIN player p ON p.player_id = e.player_id
+       LEFT JOIN session_player sp
+         ON sp.session_id = e.session_id
+        AND sp.player_id = e.player_id
+       WHERE e.session_id = ?
+       ORDER BY e.ts ASC, e.elimination_id ASC`,
+      [sessionId]
+    );
+
+    return {
+      sessionId: Number(session.session_id),
+      sessionCode: session.session_code,
+      sessionStatus: session.status,
+      eliminationCount: rows.length,
+      eliminations: rows.map(buildEliminationResponse)
+    };
+  } finally {
+    connection.release();
+  }
+};
+
+export const eliminateParticipant = async (sessionId, input = {}) => {
+  const playerId = asPositiveInteger(input.playerId);
+  const managerId = asPositiveInteger(input.managerId);
+  const sessionRoomIdInput = asPositiveInteger(input.sessionRoomId);
+  const reason = asNonEmptyString(input.reason) ?? "Participant eliminated";
+  const finalRankInput = asPositiveInteger(input.finalRank);
+  const connection = await pool.getConnection();
+
+  if (!playerId) {
+    throw createHttpError("playerId must be a positive integer.", 400);
+  }
+
+  if (reason.length > 80) {
+    throw createHttpError("reason must be 80 characters or fewer.", 400);
+  }
+
+  try {
+    await connection.beginTransaction();
+
+    const session = await findGameSession(connection, sessionId);
+
+    if (!session) {
+      await connection.rollback();
+      return null;
+    }
+
+    if (![SESSION_STATUS.ACTIVE, SESSION_STATUS.PAUSED].includes(session.status)) {
+      throw createHttpError("Only active or paused sessions can eliminate participants.", 409);
+    }
+
+    const participant = await findParticipant(connection, sessionId, playerId);
+
+    if (!participant) {
+      throw createHttpError("Player is not a participant in this session.", 404);
+    }
+
+    if (Number(participant.is_alive) !== 1) {
+      throw createHttpError("Player has already been eliminated from this session.", 409);
+    }
+
+    const existingElimination = await findElimination(connection, sessionId, playerId);
+
+    if (existingElimination) {
+      throw createHttpError("Player has already been eliminated from this session.", 409);
+    }
+
+    const sessionRoom = sessionRoomIdInput
+      ? await findSessionRoomById(connection, sessionId, sessionRoomIdInput)
+      : await findActiveSessionRoom(connection, sessionId);
+
+    if (!sessionRoom) {
+      throw createHttpError("Session room not found for this elimination.", 404);
+    }
+
+    const aliveBeforeElimination = await getRemainingPlayerCount(connection, sessionId);
+    const finalRank = finalRankInput ?? aliveBeforeElimination;
+
+    await connection.execute(
+      `UPDATE session_player
+       SET is_alive = 0,
+           eliminated_at = NOW(),
+           final_rank = ?
+       WHERE session_id = ? AND player_id = ?`,
+      [finalRank, sessionId, playerId]
+    );
+
+    await connection.execute(
+      `INSERT INTO session_room_player (
+         session_room_id,
+         player_id,
+         status
+       )
+       VALUES (?, ?, 'EliminatedInThisRoom')
+       ON DUPLICATE KEY UPDATE status = 'EliminatedInThisRoom'`,
+      [sessionRoom.session_room_id, playerId]
+    );
+
+    const [eliminationResult] = await connection.execute(
+      `INSERT INTO elimination (
+         session_id,
+         session_room_id,
+         player_id,
+         reason
+       )
+       VALUES (?, ?, ?, ?)`,
+      [sessionId, sessionRoom.session_room_id, playerId, reason]
+    );
+
+    const remainingPlayers = await getRemainingPlayerCount(connection, sessionId);
+    const eventPayload = {
+      sessionId: Number(session.session_id),
+      sessionCode: session.session_code,
+      sessionRoomId: Number(sessionRoom.session_room_id),
+      roomIndex: Number(sessionRoom.room_index),
+      roomName: sessionRoom.room_name,
+      playerId: Number(participant.player_id),
+      playerName: participant.display_name,
+      reason,
+      finalRank,
+      remainingPlayers
+    };
+
+    const event = await insertEnvironmentEvent(connection, {
+      sessionId,
+      sessionRoomId: sessionRoom.session_room_id,
+      eventType: PARTICIPANT_ACTION.ELIMINATED,
+      payload: eventPayload,
+      managerId
+    });
+    const auditId = await insertAuditLog(connection, {
+      managerId,
+      sessionId,
+      actionType: "ELIMINATE_PLAYER",
+      details: {
+        eventId: event.eventId,
+        eliminationId: Number(eliminationResult.insertId),
+        playerId,
+        sessionRoomId: Number(sessionRoom.session_room_id),
+        reason
+      }
+    });
+
+    await connection.commit();
+
+    return {
+      eliminationId: Number(eliminationResult.insertId),
+      eventId: event.eventId,
+      auditId,
+      sessionId,
+      sessionCode: session.session_code,
+      sessionRoomId: Number(sessionRoom.session_room_id),
+      roomIndex: Number(sessionRoom.room_index),
+      roomName: sessionRoom.room_name,
+      player: {
+        playerId: Number(participant.player_id),
+        playerName: participant.display_name,
+        finalRank
+      },
+      reason,
+      remainingPlayers,
+      triggeredBy: event.triggeredBy,
+      triggeredByManagerId: managerId
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
   } finally {
     connection.release();
   }
