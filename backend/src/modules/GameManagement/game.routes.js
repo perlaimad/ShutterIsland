@@ -1,8 +1,10 @@
 import { Router } from "express";
 import {
+  detectFinishConditions,
   eliminateParticipant,
   getChallengeSequence,
   getEliminations,
+  getFinishConditions,
   getGameEvents,
   getLevelProgression,
   getPerformanceFlow,
@@ -147,4 +149,14 @@ gameManagementRouter.post(
 gameManagementRouter.get(
   "/game-management/sessions/:sessionId/performance/flow",
   handleChallengeAction((sessionId) => getPerformanceFlow(sessionId))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/finish-conditions",
+  handleChallengeAction((sessionId) => getFinishConditions(sessionId))
+);
+
+gameManagementRouter.post(
+  "/game-management/sessions/:sessionId/finish-conditions/detect",
+  handleChallengeAction((sessionId, body) => detectFinishConditions(sessionId, body))
 );

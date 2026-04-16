@@ -21,7 +21,8 @@ const TIMER_COLUMNS = `
 
 const SESSION_STATUS = {
   ACTIVE: "Active",
-  PAUSED: "Paused"
+  PAUSED: "Paused",
+  FINISHED: "Finished"
 };
 
 const ROOM_STATUS = {
@@ -1235,6 +1236,257 @@ const getRemainingPlayerCount = async (connection, sessionId) => {
   );
 
   return Number(rows[0]?.remaining_players ?? 0);
+};
+
+const getFinishSession = async (connection, sessionId) => {
+  const [rows] = await connection.execute(
+    `SELECT ${TIMER_COLUMNS}
+     FROM game_session
+     WHERE session_id = ?
+     LIMIT 1`,
+    [sessionId]
+  );
+
+  return rows[0] ?? null;
+};
+
+const getFinishParticipantSummary = async (connection, sessionId) => {
+  const [rows] = await connection.execute(
+    `SELECT
+       COUNT(*) AS total_participants,
+       SUM(CASE WHEN is_alive = 1 THEN 1 ELSE 0 END) AS alive_count,
+       SUM(CASE WHEN is_alive = 0 THEN 1 ELSE 0 END) AS eliminated_count
+     FROM session_player
+     WHERE session_id = ?`,
+    [sessionId]
+  );
+  const [winnerRows] = await connection.execute(
+    `SELECT
+       sp.player_id,
+       sp.slot_number,
+       p.display_name
+     FROM session_player sp
+     JOIN player p ON p.player_id = sp.player_id
+     WHERE sp.session_id = ? AND sp.is_alive = 1
+     ORDER BY sp.slot_number ASC
+     LIMIT 1`,
+    [sessionId]
+  );
+  const summary = rows[0] ?? {};
+
+  return {
+    totalParticipants: Number(summary.total_participants ?? 0),
+    aliveCount: Number(summary.alive_count ?? 0),
+    eliminatedCount: Number(summary.eliminated_count ?? 0),
+    winner: winnerRows[0]
+      ? {
+          playerId: Number(winnerRows[0].player_id),
+          playerName: winnerRows[0].display_name,
+          slotNumber: Number(winnerRows[0].slot_number)
+        }
+      : null
+  };
+};
+
+const getFinishRoomSummary = async (connection, sessionId) => {
+  const [rows] = await connection.execute(
+    `SELECT
+       COUNT(*) AS total_rooms,
+       SUM(CASE WHEN sr.status = 'Completed' THEN 1 ELSE 0 END) AS completed_rooms,
+       SUM(CASE WHEN sr.status = 'Active' THEN 1 ELSE 0 END) AS active_rooms,
+       SUM(CASE WHEN sr.status = 'Failed' THEN 1 ELSE 0 END) AS failed_rooms,
+       SUM(CASE WHEN sr.status = 'Locked' THEN 1 ELSE 0 END) AS locked_rooms,
+       SUM(CASE WHEN sr.status = 'Pending' THEN 1 ELSE 0 END) AS pending_rooms
+     FROM session_room sr
+     WHERE sr.session_id = ?`,
+    [sessionId]
+  );
+  const [finalRoomRows] = await connection.execute(
+    `SELECT
+       sr.session_room_id,
+       sr.room_index,
+       sr.status,
+       sr.started_at,
+       sr.ended_at,
+       r.name AS room_name
+     FROM session_room sr
+     JOIN room r ON r.room_id = sr.room_id
+     WHERE sr.session_id = ?
+     ORDER BY sr.room_index DESC
+     LIMIT 1`,
+    [sessionId]
+  );
+  const summary = rows[0] ?? {};
+  const finalRoom = finalRoomRows[0] ?? null;
+
+  return {
+    totalRooms: Number(summary.total_rooms ?? 0),
+    completedRooms: Number(summary.completed_rooms ?? 0),
+    activeRooms: Number(summary.active_rooms ?? 0),
+    failedRooms: Number(summary.failed_rooms ?? 0),
+    lockedRooms: Number(summary.locked_rooms ?? 0),
+    pendingRooms: Number(summary.pending_rooms ?? 0),
+    finalRoom: finalRoom
+      ? {
+          sessionRoomId: Number(finalRoom.session_room_id),
+          roomIndex: Number(finalRoom.room_index),
+          roomName: finalRoom.room_name,
+          roomStatus: finalRoom.status,
+          startedAt: toIsoString(finalRoom.started_at),
+          endedAt: toIsoString(finalRoom.ended_at)
+        }
+      : null
+  };
+};
+
+const buildFinishConditionSummary = async (connection, sessionId) => {
+  const session = await getFinishSession(connection, sessionId);
+
+  if (!session) {
+    return null;
+  }
+
+  const timer = buildTimerResponse(session);
+  const participants = await getFinishParticipantSummary(connection, sessionId);
+  const rooms = await getFinishRoomSummary(connection, sessionId);
+  const sessionAlreadyFinished = session.session_status === SESSION_STATUS.FINISHED;
+  const timerExpired = timer.timerStatus === TIMER_STATUS.FINISHED;
+  const oneSurvivorRemaining = participants.totalParticipants > 1 && participants.aliveCount === 1;
+  const noSurvivorsRemaining = participants.totalParticipants > 0 && participants.aliveCount === 0;
+  const allRoomsCompleted = rooms.totalRooms > 0 && rooms.completedRooms === rooms.totalRooms;
+  const finalRoomCompleted = rooms.finalRoom?.roomStatus === ROOM_STATUS.COMPLETED;
+  const failedRoomExists = rooms.failedRooms > 0;
+  let finishReason = null;
+
+  if (sessionAlreadyFinished) {
+    finishReason = "Session is already finished.";
+  } else if (noSurvivorsRemaining) {
+    finishReason = "No surviving players remain.";
+  } else if (oneSurvivorRemaining) {
+    finishReason = "Only one surviving player remains.";
+  } else if (finalRoomCompleted || allRoomsCompleted) {
+    finishReason = "The final room has been completed.";
+  } else if (timerExpired) {
+    finishReason = "The session timer has expired.";
+  } else if (failedRoomExists) {
+    finishReason = "A session room has failed.";
+  }
+
+  const shouldFinish = Boolean(finishReason) && !sessionAlreadyFinished;
+
+  return {
+    sessionId: Number(session.session_id),
+    sessionCode: session.session_code,
+    sessionStatus: session.session_status,
+    isFinished: sessionAlreadyFinished,
+    shouldFinish,
+    finishReason,
+    conditions: {
+      sessionAlreadyFinished,
+      timerExpired,
+      oneSurvivorRemaining,
+      noSurvivorsRemaining,
+      allRoomsCompleted,
+      finalRoomCompleted,
+      failedRoomExists
+    },
+    timer,
+    participants,
+    rooms
+  };
+};
+
+export const getFinishConditions = async (sessionId) => {
+  const connection = await pool.getConnection();
+
+  try {
+    return buildFinishConditionSummary(connection, sessionId);
+  } finally {
+    connection.release();
+  }
+};
+
+export const detectFinishConditions = async (sessionId, input = {}) => {
+  const managerId = asPositiveInteger(input.managerId);
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const summary = await buildFinishConditionSummary(connection, sessionId);
+
+    if (!summary) {
+      await connection.rollback();
+      return null;
+    }
+
+    if (!summary.shouldFinish) {
+      await connection.commit();
+      return {
+        ...summary,
+        sessionFinishedNow: false,
+        eventId: null,
+        auditId: null
+      };
+    }
+
+    if (![SESSION_STATUS.ACTIVE, SESSION_STATUS.PAUSED].includes(summary.sessionStatus)) {
+      throw createHttpError("Only active or paused sessions can be finished by detection.", 409);
+    }
+
+    await connection.execute(
+      `UPDATE game_session
+       SET status = ?,
+           ended_at = COALESCE(ended_at, NOW()),
+           timer_status = CASE WHEN timer_status = ? THEN ? ELSE timer_status END
+       WHERE session_id = ?`,
+      [SESSION_STATUS.FINISHED, TIMER_STATUS.RUNNING, TIMER_STATUS.STOPPED, sessionId]
+    );
+
+    const event = await insertEnvironmentEvent(connection, {
+      sessionId,
+      sessionRoomId: summary.rooms.finalRoom?.sessionRoomId ?? null,
+      eventType: "FinishConditionDetected",
+      payload: {
+        sessionId,
+        sessionCode: summary.sessionCode,
+        finishReason: summary.finishReason,
+        conditions: summary.conditions,
+        aliveCount: summary.participants.aliveCount,
+        winner: summary.participants.winner
+      },
+      managerId
+    });
+    const auditId = await insertAuditLog(connection, {
+      managerId,
+      sessionId,
+      actionType: "FINISH_SESSION",
+      details: {
+        eventId: event.eventId,
+        finishReason: summary.finishReason,
+        conditions: summary.conditions
+      }
+    });
+
+    await connection.commit();
+
+    return {
+      ...summary,
+      sessionStatus: SESSION_STATUS.FINISHED,
+      isFinished: true,
+      shouldFinish: false,
+      sessionFinishedNow: true,
+      eventId: event.eventId,
+      auditId,
+      triggeredBy: event.triggeredBy,
+      triggeredByManagerId: managerId
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
 };
 
 const getMandatoryChallengeSummary = async (connection, sessionId, sessionRoomId) => {
