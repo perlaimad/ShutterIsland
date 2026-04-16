@@ -1,8 +1,10 @@
 import { Router } from "express";
 import {
   getChallengeSequence,
+  getLevelProgression,
   getSessionTimer,
   pauseSessionTimer,
+  progressToNextLevel,
   resumeSessionTimer,
   startSessionTimer,
   stopSessionTimer,
@@ -99,4 +101,14 @@ gameManagementRouter.get(
 gameManagementRouter.post(
   "/game-management/sessions/:sessionId/challenges/trigger",
   handleChallengeAction((sessionId, body) => triggerChallengeSequence(sessionId, body))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/levels/progression",
+  handleChallengeAction((sessionId) => getLevelProgression(sessionId))
+);
+
+gameManagementRouter.post(
+  "/game-management/sessions/:sessionId/levels/progress",
+  handleChallengeAction((sessionId, body) => progressToNextLevel(sessionId, body))
 );
