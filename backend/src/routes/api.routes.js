@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { gameManagementRouter } from "../modules/game-management/game.routes.js";
-import { liveStreamingPaymentBettingRouter } from "../modules/live-streaming-payment-betting/live.routes.js";
-import { monitoringReportingRouter } from "../modules/monitoring-reporting/monitoring.routes.js";
-import { sessionAdministrationRouter } from "../modules/session-administration/session.routes.js";
+import { gameManagementRouter } from "../modules/GameManagement/game.routes.js";
+import { liveStreamingPaymentBettingRouter } from "../modules/LiveStreamingPaymentBetting/live.routes.js";
+import { monitoringReportingRouter } from "../modules/MonitoringReporting/monitoring.routes.js";
+import { sessionAdministrationRouter } from "../modules/SessionAdminstration/session.routes.js";
 
 export const apiRouter = Router();
 
