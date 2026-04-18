@@ -1489,6 +1489,302 @@ export const detectFinishConditions = async (sessionId, input = {}) => {
   }
 };
 
+const getRankingRows = async (connection, sessionId) => {
+  const [rows] = await connection.execute(
+    `SELECT
+       sp.session_id,
+       sp.player_id,
+       sp.slot_number,
+       sp.joined_at,
+       sp.is_alive,
+       sp.eliminated_at,
+       sp.final_rank,
+       p.display_name,
+       e.elimination_id,
+       e.reason AS elimination_reason,
+       e.ts AS elimination_time,
+       sr.session_room_id,
+       sr.room_index,
+       r.name AS room_name
+     FROM session_player sp
+     JOIN player p ON p.player_id = sp.player_id
+     LEFT JOIN elimination e
+       ON e.session_id = sp.session_id
+      AND e.player_id = sp.player_id
+     LEFT JOIN session_room sr ON sr.session_room_id = e.session_room_id
+     LEFT JOIN room r ON r.room_id = sr.room_id
+     WHERE sp.session_id = ?
+     ORDER BY sp.slot_number ASC`,
+    [sessionId]
+  );
+
+  return rows;
+};
+
+const buildAssignedRankings = (rows) => {
+  const alivePlayers = rows
+    .filter((row) => Number(row.is_alive) === 1)
+    .sort((left, right) => Number(left.slot_number) - Number(right.slot_number));
+  const eliminatedPlayers = rows
+    .filter((row) => Number(row.is_alive) !== 1)
+    .sort((left, right) => {
+      const leftTime = new Date(left.elimination_time ?? left.eliminated_at ?? left.joined_at).getTime();
+      const rightTime = new Date(right.elimination_time ?? right.eliminated_at ?? right.joined_at).getTime();
+
+      if (rightTime !== leftTime) {
+        return rightTime - leftTime;
+      }
+
+      return Number(left.slot_number) - Number(right.slot_number);
+    });
+  const orderedPlayers = [...alivePlayers, ...eliminatedPlayers];
+
+  return orderedPlayers.map((row, index) => ({
+    playerId: Number(row.player_id),
+    playerName: row.display_name,
+    slotNumber: Number(row.slot_number),
+    isAlive: Boolean(row.is_alive),
+    finalRank: index + 1,
+    eliminatedAt: toIsoString(row.eliminated_at ?? row.elimination_time),
+    elimination: row.elimination_id === null
+      ? null
+      : {
+          eliminationId: Number(row.elimination_id),
+          reason: row.elimination_reason,
+          sessionRoomId: Number(row.session_room_id),
+          roomIndex: Number(row.room_index),
+          roomName: row.room_name,
+          eliminatedAt: toIsoString(row.elimination_time)
+        }
+  }));
+};
+
+export const getFinalRankings = async (sessionId) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const session = await findGameSession(connection, sessionId);
+
+    if (!session) {
+      return null;
+    }
+
+    const rows = await getRankingRows(connection, sessionId);
+    const assignedRankings = buildAssignedRankings(rows);
+    const savedRankings = rows
+      .filter((row) => row.final_rank !== null)
+      .map((row) => ({
+        playerId: Number(row.player_id),
+        playerName: row.display_name,
+        slotNumber: Number(row.slot_number),
+        isAlive: Boolean(row.is_alive),
+        finalRank: Number(row.final_rank),
+        eliminatedAt: toIsoString(row.eliminated_at ?? row.elimination_time)
+      }))
+      .sort((left, right) => left.finalRank - right.finalRank);
+
+    return {
+      sessionId: Number(session.session_id),
+      sessionCode: session.session_code,
+      sessionStatus: session.status,
+      rankingsAssigned: savedRankings.length === rows.length && rows.length > 0,
+      rankings: savedRankings.length === rows.length ? savedRankings : assignedRankings,
+      suggestedRankings: assignedRankings
+    };
+  } finally {
+    connection.release();
+  }
+};
+
+export const assignFinalRankings = async (sessionId, input = {}) => {
+  const managerId = asPositiveInteger(input.managerId);
+  const force = input.force === true;
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const session = await findGameSession(connection, sessionId);
+
+    if (!session) {
+      await connection.rollback();
+      return null;
+    }
+
+    const finishSummary = await buildFinishConditionSummary(connection, sessionId);
+
+    if (!force && finishSummary?.sessionStatus !== SESSION_STATUS.FINISHED && !finishSummary?.shouldFinish) {
+      throw createHttpError("Final rankings can only be assigned after a finish condition is met.", 409);
+    }
+
+    const rows = await getRankingRows(connection, sessionId);
+
+    if (rows.length === 0) {
+      throw createHttpError("This session has no participants to rank.", 409);
+    }
+
+    const rankings = buildAssignedRankings(rows);
+
+    for (const ranking of rankings) {
+      await connection.execute(
+        `UPDATE session_player
+         SET final_rank = ?
+         WHERE session_id = ? AND player_id = ?`,
+        [ranking.finalRank, sessionId, ranking.playerId]
+      );
+    }
+
+    const event = await insertEnvironmentEvent(connection, {
+      sessionId,
+      sessionRoomId: finishSummary?.rooms.finalRoom?.sessionRoomId ?? null,
+      eventType: "FinalRankingsAssigned",
+      payload: {
+        sessionId,
+        sessionCode: session.session_code,
+        rankings: rankings.map((ranking) => ({
+          playerId: ranking.playerId,
+          playerName: ranking.playerName,
+          finalRank: ranking.finalRank,
+          isAlive: ranking.isAlive
+        }))
+      },
+      managerId
+    });
+    const auditId = await insertAuditLog(connection, {
+      managerId,
+      sessionId,
+      actionType: "ASSIGN_FINAL_RANKINGS",
+      details: {
+        eventId: event.eventId,
+        participantCount: rankings.length
+      }
+    });
+
+    await connection.commit();
+
+    return {
+      eventId: event.eventId,
+      auditId,
+      sessionId,
+      sessionCode: session.session_code,
+      rankingsAssigned: true,
+      rankings,
+      triggeredBy: event.triggeredBy,
+      triggeredByManagerId: managerId
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
+const getSyncRooms = async (connection, sessionId) => {
+  const rooms = await getProgressionRooms(connection, sessionId);
+
+  return rooms.map((room) => ({
+    sessionRoomId: room.sessionRoomId,
+    roomIndex: room.roomIndex,
+    roomName: room.roomName,
+    roomStatus: room.roomStatus,
+    startedAt: room.startedAt,
+    endedAt: room.endedAt,
+    unlockedNextRoomAt: room.unlockedNextRoomAt,
+    eliminationCount: room.eliminationCount,
+    minEliminationsToUnlock: room.minEliminationsToUnlock,
+    mandatoryChallengeCount: room.mandatoryChallengeCount,
+    untriggeredMandatoryChallengeCount: room.untriggeredMandatoryChallengeCount,
+    canUnlockNextRoom: room.canUnlockNextRoom
+  }));
+};
+
+const getSyncParticipants = async (connection, sessionId) => {
+  const [rows] = await connection.execute(
+    `SELECT
+       sp.player_id,
+       sp.slot_number,
+       sp.joined_at,
+       sp.is_alive,
+       sp.eliminated_at,
+       sp.final_rank,
+       p.display_name
+     FROM session_player sp
+     JOIN player p ON p.player_id = sp.player_id
+     WHERE sp.session_id = ?
+     ORDER BY sp.slot_number ASC`,
+    [sessionId]
+  );
+
+  return rows.map((row) => ({
+    playerId: Number(row.player_id),
+    playerName: row.display_name,
+    slotNumber: Number(row.slot_number),
+    joinedAt: toIsoString(row.joined_at),
+    isAlive: Boolean(row.is_alive),
+    eliminatedAt: toIsoString(row.eliminated_at),
+    finalRank: row.final_rank === null ? null : Number(row.final_rank)
+  }));
+};
+
+export const synchronizeGameState = async (sessionId, options = {}) => {
+  const eventLimitInput = asPositiveInteger(options.eventLimit ?? options.limit);
+  const eventLimit = Math.min(eventLimitInput ?? 10, 50);
+  const connection = await pool.getConnection();
+
+  try {
+    const session = await getFinishSession(connection, sessionId);
+
+    if (!session) {
+      return null;
+    }
+
+    const timer = buildTimerResponse(session);
+    const rooms = await getSyncRooms(connection, sessionId);
+    const participants = await getSyncParticipants(connection, sessionId);
+    const finishConditions = await buildFinishConditionSummary(connection, sessionId);
+    const rankings = buildAssignedRankings(await getRankingRows(connection, sessionId));
+    const [eventRows] = await connection.execute(
+      `SELECT
+         ev.event_id,
+         ev.session_id,
+         ev.session_room_id,
+         ev.event_type,
+         ev.payload_json,
+         ev.triggered_by,
+         ev.triggered_by_manager_id,
+         ev.created_at
+       FROM environment_event ev
+       WHERE ev.session_id = ?
+       ORDER BY ev.created_at DESC, ev.event_id DESC
+       LIMIT ${eventLimit}`,
+      [sessionId]
+    );
+    const currentRoom = rooms.find((room) => room.roomStatus === ROOM_STATUS.ACTIVE) ?? null;
+
+    return {
+      sessionId: Number(session.session_id),
+      sessionCode: session.session_code,
+      sessionStatus: session.session_status,
+      syncedAt: new Date().toISOString(),
+      timer,
+      currentRoom,
+      rooms,
+      participants,
+      rankings,
+      finishConditions: {
+        isFinished: finishConditions.isFinished,
+        shouldFinish: finishConditions.shouldFinish,
+        finishReason: finishConditions.finishReason,
+        conditions: finishConditions.conditions
+      },
+      recentEvents: eventRows.map(buildEventResponse)
+    };
+  } finally {
+    connection.release();
+  }
+};
+
 const getMandatoryChallengeSummary = async (connection, sessionId, sessionRoomId) => {
   const [rows] = await connection.execute(
     `SELECT

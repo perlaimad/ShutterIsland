@@ -1,9 +1,11 @@
 import { Router } from "express";
 import {
+  assignFinalRankings,
   detectFinishConditions,
   eliminateParticipant,
   getChallengeSequence,
   getEliminations,
+  getFinalRankings,
   getFinishConditions,
   getGameEvents,
   getLevelProgression,
@@ -16,6 +18,7 @@ import {
   resumeSessionTimer,
   startSessionTimer,
   stopSessionTimer,
+  synchronizeGameState,
   triggerChallengeSequence
 } from "./game.service.js";
 
@@ -159,4 +162,19 @@ gameManagementRouter.get(
 gameManagementRouter.post(
   "/game-management/sessions/:sessionId/finish-conditions/detect",
   handleChallengeAction((sessionId, body) => detectFinishConditions(sessionId, body))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/final-rankings",
+  handleChallengeAction((sessionId) => getFinalRankings(sessionId))
+);
+
+gameManagementRouter.post(
+  "/game-management/sessions/:sessionId/final-rankings/assign",
+  handleChallengeAction((sessionId, body) => assignFinalRankings(sessionId, body))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/state/sync",
+  handleChallengeAction((sessionId, _body, req) => synchronizeGameState(sessionId, req.query))
 );
