@@ -1,0 +1,573 @@
+.page {
+  --raspberry: #870058;
+  --cherry: #A4303F;
+  --apricot: #F2D0A4;
+  --papaya: #FFECCC;
+  --cream: #fff8f0;
+  --ink: #2e1a10;
+  background: var(--cream);
+  color: var(--ink);
+  width: 100%;
+  min-height: 100vh;
+}
+
+:global(html.dark) .page {
+  --cream: #140b08;
+  --ink: #f2d0a4;
+}
+
+.root {
+  min-height: 100vh;
+  background: var(--cream);
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
+}
+
+.ticker {
+  background: var(--cherry);
+  height: 30px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border-bottom: 1.5px solid var(--raspberry);
+}
+
+.tickerTrack {
+  display: flex;
+  white-space: nowrap;
+  animation: scroll-left 18s linear infinite;
+}
+
+.tickerItem {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--papaya);
+  padding: 0 8px;
+}
+
+.tickerDiamond {
+  color: var(--apricot);
+  opacity: 0.6;
+  margin: 0 12px;
+  font-size: 12px;
+}
+
+.nav {
+  background: var(--cream);
+  border-bottom: 1px solid rgba(164, 48, 63, 0.2);
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+
+.navBrand {
+  font-family: "Cinzel Decorative", serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--raspberry);
+}
+
+.navLinks {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.navLink {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 3px;
+  color: var(--ink);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  opacity: 0.75;
+}
+
+.navLink:hover {
+  opacity: 1;
+  background: rgba(164, 48, 63, 0.07);
+}
+
+.navCta {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 7px 18px;
+  border-radius: 3px;
+  background: var(--raspberry);
+  color: var(--papaya);
+  border: none;
+  cursor: pointer;
+}
+
+.themeToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(164, 48, 63, 0.32);
+  border-radius: 999px;
+  background: rgba(164, 48, 63, 0.08);
+  color: var(--ink);
+  padding: 4px 8px 4px 5px;
+  cursor: pointer;
+}
+
+.themeToggleTrack {
+  width: 30px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(164, 48, 63, 0.4);
+  background: rgba(164, 48, 63, 0.16);
+  padding: 1px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.themeToggleThumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--raspberry);
+  transform: translateX(0);
+  transition: transform 0.22s ease;
+}
+
+.themeToggleText {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.themeToggleOn .themeToggleThumb {
+  transform: translateX(14px);
+  background: var(--cherry);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  border-bottom: 1px solid rgba(164, 48, 63, 0.15);
+}
+
+.heroLeft {
+  padding: 32px 28px;
+  border-right: 1px solid rgba(164, 48, 63, 0.15);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.heroRight {
+  padding: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.heroEyebrow {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: var(--cherry);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.heroTitle {
+  font-family: "Cinzel Decorative", serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.heroTitleSub {
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--raspberry);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.dividerOrnament {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 18px;
+}
+
+.dividerLine {
+  height: 1px;
+  width: 52px;
+  background: rgba(164, 48, 63, 0.25);
+}
+
+.dividerDiamond {
+  width: 6px;
+  height: 6px;
+  background: var(--cherry);
+  transform: rotate(45deg);
+  opacity: 0.5;
+}
+
+.heroDesc {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  line-height: 1.9;
+  color: rgba(46, 26, 16, 0.65);
+  max-width: 360px;
+  letter-spacing: 0.04em;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  width: 100%;
+}
+
+.summaryCard {
+  background: #fdf4e7;
+  border: 1px solid rgba(164, 48, 63, 0.15);
+  border-radius: 3px;
+  padding: 18px;
+}
+
+.summaryLabel {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(46, 26, 16, 0.5);
+  margin-bottom: 8px;
+}
+
+.summaryValue {
+  font-family: "Cinzel Decorative", serif;
+  font-size: 26px;
+  color: var(--ink);
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  padding: 24px 28px;
+}
+
+.panel {
+  background: #fdf4e7;
+  border: 1px solid rgba(164, 48, 63, 0.15);
+  border-radius: 3px;
+  padding: 18px;
+}
+
+.panelTitle {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--cherry);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(164, 48, 63, 0.12);
+  font-size: 12px;
+}
+
+.table th {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(46, 26, 16, 0.48);
+}
+
+.table td {
+  font-family: "Share Tech Mono", monospace;
+  color: var(--ink);
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-family: "Cinzel", serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.badgeActive {
+  background: rgba(69, 176, 108, 0.12);
+  color: #2c7c48;
+  border: 1px solid rgba(69, 176, 108, 0.3);
+}
+
+.badgePaused {
+  background: rgba(164, 48, 63, 0.08);
+  color: var(--cherry);
+  border: 1px solid rgba(164, 48, 63, 0.28);
+}
+
+.logList {
+  display: grid;
+  gap: 10px;
+}
+
+.logItem {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 10px;
+  border-bottom: 1px solid rgba(164, 48, 63, 0.12);
+  padding-bottom: 10px;
+}
+
+.logTime {
+  font-family: "Share Tech Mono", monospace;
+  color: var(--raspberry);
+  font-size: 12px;
+}
+
+.logContent {
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  color: var(--ink);
+}
+
+.logTarget {
+  color: var(--cherry);
+}
+
+.reportCards {
+  display: grid;
+  gap: 12px;
+}
+
+.reportCard {
+  border: 1px solid rgba(164, 48, 63, 0.15);
+  background: rgba(164, 48, 63, 0.04);
+  padding: 14px;
+  border-radius: 3px;
+}
+
+.reportLabel {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--raspberry);
+  margin-bottom: 6px;
+}
+
+.reportText {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  line-height: 1.7;
+  color: rgba(46, 26, 16, 0.62);
+}
+
+.statusBar {
+  background: #fdf4e7;
+  border-top: 1px solid rgba(164, 48, 63, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 9px 28px;
+  flex-wrap: wrap;
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: rgba(46, 26, 16, 0.5);
+  text-transform: uppercase;
+}
+
+.statDotGreen {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #45B06C;
+}
+
+.statVal {
+  font-weight: 700;
+  color: var(--ink);
+  margin-left: 4px;
+}
+
+.statBrand {
+  margin-left: auto;
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: rgba(46, 26, 16, 0.5);
+  text-transform: uppercase;
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+:global(html.dark) .nav,
+:global(html.dark) .statusBar {
+  background: #1a0f0b;
+  border-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .navLink {
+  color: #f2d0a4;
+}
+
+:global(html.dark) .navLink:hover {
+  background: rgba(164, 48, 63, 0.28);
+}
+
+:global(html.dark) .hero,
+:global(html.dark) .contentGrid {
+  background: #140b08;
+}
+
+:global(html.dark) .heroLeft {
+  border-right-color: rgba(164, 48, 63, 0.35);
+}
+
+:global(html.dark) .heroEyebrow,
+:global(html.dark) .panelTitle {
+  color: #e894a8;
+}
+
+:global(html.dark) .heroTitle,
+:global(html.dark) .summaryValue,
+:global(html.dark) .table td,
+:global(html.dark) .logContent,
+:global(html.dark) .statVal {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .heroTitleSub,
+:global(html.dark) .logTarget,
+:global(html.dark) .reportLabel {
+  color: #f0a5b8;
+}
+
+:global(html.dark) .heroDesc,
+:global(html.dark) .reportText,
+:global(html.dark) .statItem,
+:global(html.dark) .table th,
+:global(html.dark) .summaryLabel,
+:global(html.dark) .statBrand {
+  color: rgba(255, 236, 204, 0.68);
+}
+
+:global(html.dark) .summaryCard,
+:global(html.dark) .panel {
+  background: #21120d;
+  border-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .reportCard {
+  background: rgba(164, 48, 63, 0.14);
+  border-color: rgba(164, 48, 63, 0.4);
+}
+
+:global(html.dark) .table th,
+:global(html.dark) .table td,
+:global(html.dark) .logItem {
+  border-bottom-color: rgba(164, 48, 63, 0.3);
+}
+
+:global(html.dark) .badgePaused {
+  color: #f0a5b8;
+  border-color: rgba(240, 165, 184, 0.35);
+}
+
+:global(html.dark) .badgeActive {
+  color: #99d8ae;
+  border-color: rgba(153, 216, 174, 0.35);
+}
+
+@media (max-width: 1024px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .heroLeft {
+    border-right: none;
+    border-bottom: 1px solid rgba(164, 48, 63, 0.15);
+  }
+
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .nav {
+    padding: 12px 14px;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .navLinks {
+    justify-content: center;
+  }
+
+  .heroLeft,
+  .heroRight,
+  .contentGrid,
+  .statusBar {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .logItem {
+    grid-template-columns: 1fr;
+  }
+
+  .statBrand {
+    margin-left: 0;
+    width: 100%;
+  }
+}
