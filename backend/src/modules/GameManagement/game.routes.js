@@ -1,10 +1,25 @@
 import { Router } from "express";
 import {
+  assignFinalRankings,
+  detectFinishConditions,
+  eliminateParticipant,
+  getChallengeSequence,
+  getEliminations,
+  getFinalRankings,
+  getFinishConditions,
+  getGameEvents,
+  getLevelProgression,
+  getPerformanceFlow,
   getSessionTimer,
   pauseSessionTimer,
+  progressToNextLevel,
+  recordGameEvent,
+  recordParticipantAction,
   resumeSessionTimer,
   startSessionTimer,
-  stopSessionTimer
+  stopSessionTimer,
+  synchronizeGameState,
+  triggerChallengeSequence
 } from "./game.service.js";
 
 export const gameManagementRouter = Router();
@@ -39,6 +54,31 @@ const handleTimerAction = (action) => async (req, res) => {
   }
 };
 
+const sendChallengeResult = (res, result) => {
+  if (!result) {
+    return res.status(404).json({ message: "Session not found." });
+  }
+
+  return res.json(result);
+};
+
+const handleChallengeAction = (action) => async (req, res) => {
+  const sessionId = parseSessionId(req.params.sessionId);
+
+  if (!sessionId) {
+    return res.status(400).json({ message: "sessionId must be a positive integer." });
+  }
+
+  try {
+    const result = await action(sessionId, req.body, req);
+    return sendChallengeResult(res, result);
+  } catch (error) {
+    return res.status(error.statusCode ?? 500).json({
+      message: error.message ?? "Challenge sequence request failed."
+    });
+  }
+};
+
 gameManagementRouter.get(
   "/game-management/sessions/:sessionId/timer",
   handleTimerAction((sessionId) => getSessionTimer(sessionId))
@@ -62,4 +102,79 @@ gameManagementRouter.post(
 gameManagementRouter.post(
   "/game-management/sessions/:sessionId/timer/stop",
   handleTimerAction((sessionId) => stopSessionTimer(sessionId))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/challenges/sequence",
+  handleChallengeAction((sessionId) => getChallengeSequence(sessionId))
+);
+
+gameManagementRouter.post(
+  "/game-management/sessions/:sessionId/challenges/trigger",
+  handleChallengeAction((sessionId, body) => triggerChallengeSequence(sessionId, body))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/levels/progression",
+  handleChallengeAction((sessionId) => getLevelProgression(sessionId))
+);
+
+gameManagementRouter.post(
+  "/game-management/sessions/:sessionId/levels/progress",
+  handleChallengeAction((sessionId, body) => progressToNextLevel(sessionId, body))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/events",
+  handleChallengeAction((sessionId, _body, req) => getGameEvents(sessionId, req.query))
+);
+
+gameManagementRouter.post(
+  "/game-management/sessions/:sessionId/events",
+  handleChallengeAction((sessionId, body) => recordGameEvent(sessionId, body))
+);
+
+gameManagementRouter.post(
+  "/game-management/sessions/:sessionId/participants/actions",
+  handleChallengeAction((sessionId, body) => recordParticipantAction(sessionId, body))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/eliminations",
+  handleChallengeAction((sessionId) => getEliminations(sessionId))
+);
+
+gameManagementRouter.post(
+  "/game-management/sessions/:sessionId/eliminations",
+  handleChallengeAction((sessionId, body) => eliminateParticipant(sessionId, body))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/performance/flow",
+  handleChallengeAction((sessionId) => getPerformanceFlow(sessionId))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/finish-conditions",
+  handleChallengeAction((sessionId) => getFinishConditions(sessionId))
+);
+
+gameManagementRouter.post(
+  "/game-management/sessions/:sessionId/finish-conditions/detect",
+  handleChallengeAction((sessionId, body) => detectFinishConditions(sessionId, body))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/final-rankings",
+  handleChallengeAction((sessionId) => getFinalRankings(sessionId))
+);
+
+gameManagementRouter.post(
+  "/game-management/sessions/:sessionId/final-rankings/assign",
+  handleChallengeAction((sessionId, body) => assignFinalRankings(sessionId, body))
+);
+
+gameManagementRouter.get(
+  "/game-management/sessions/:sessionId/state/sync",
+  handleChallengeAction((sessionId, _body, req) => synchronizeGameState(sessionId, req.query))
 );
