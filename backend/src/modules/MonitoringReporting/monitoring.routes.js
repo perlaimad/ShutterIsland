@@ -235,3 +235,131 @@ monitoringReportingRouter.get("/admin/reports/participant-summary", async (req, 
     });
   }
 });
+
+monitoringReportingRouter.post("/admin/logs/audit", async (req, res) => {
+  try {
+    const { managerId, sessionId = null, actionType, details } = req.body;
+
+    if (!managerId || !actionType || !details) {
+      return res.status(400).json({
+        message: "managerId, actionType, and details are required",
+      });
+    }
+
+    const [result] = await pool.query(
+      `
+      INSERT INTO audit_log (
+        manager_id,
+        session_id,
+        action_type,
+        details_json
+      )
+      VALUES (?, ?, ?, ?)
+      `,
+      [
+        managerId,
+        sessionId,
+        actionType,
+        JSON.stringify(details),
+      ]
+    );
+
+    res.status(201).json({
+      message: "Audit log created successfully",
+      auditId: result.insertId,
+    });
+  } catch (error) {
+    console.error("Audit log insert error:", error);
+    res.status(500).json({
+      message: "Failed to create audit log",
+      error: error.message,
+    });
+  }
+});
+
+monitoringReportingRouter.get("/admin/logs/audit", async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT
+        a.audit_id,
+        a.manager_id,
+        a.session_id,
+        a.action_type,
+        a.action_time,
+        a.details_json,
+        m.username AS manager_username
+      FROM audit_log a
+      LEFT JOIN manager m
+        ON a.manager_id = m.manager_id
+      ORDER BY a.action_time DESC
+      LIMIT 100
+    `);
+
+    res.json(
+      rows.map((row) => ({
+        auditId: row.audit_id,
+        managerId: row.manager_id,
+        managerUsername: row.manager_username || null,
+        sessionId: row.session_id,
+        actionType: row.action_type,
+        actionTime: row.action_time,
+        details: row.details_json,
+      }))
+    );
+  } catch (error) {
+    console.error("Audit log fetch error:", error);
+    res.status(500).json({
+      message: "Failed to load audit logs",
+      error: error.message,
+    });
+  }
+});
+
+monitoringReportingRouter.get("/admin/reports/session-events", async (req, res) => {
+  try {
+    const { sessionId } = req.query;
+
+    let query = `
+      SELECT
+        ee.event_id,
+        ee.session_id,
+        ee.session_room_id,
+        ee.event_type,
+        ee.payload_json,
+        ee.triggered_by,
+        ee.triggered_by_manager_id,
+        ee.created_at
+      FROM environment_event ee
+    `;
+
+    const params = [];
+
+    if (sessionId) {
+      query += " WHERE ee.session_id = ? ";
+      params.push(sessionId);
+    }
+
+    query += " ORDER BY ee.created_at DESC";
+
+    const [rows] = await pool.query(query, params);
+
+    res.json(
+      rows.map((row) => ({
+        eventId: row.event_id,
+        sessionId: row.session_id,
+        roomId: row.session_room_id,
+        eventType: row.event_type,
+        payload: row.payload_json,
+        triggeredBy: row.triggered_by,
+        managerId: row.triggered_by_manager_id,
+        timestamp: row.created_at,
+      }))
+    );
+  } catch (error) {
+    console.error("Session events error:", error);
+    res.status(500).json({
+      message: "Failed to load session events",
+      error: error.message,
+    });
+  }
+});
