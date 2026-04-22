@@ -145,7 +145,6 @@ function HomePage() {
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [viewers, setViewers] = useState(1204);
   const [bets, setBets] = useState(342);
-  const [isDark, setIsDark] = useState(true);
   const [winnerImageBroken, setWinnerImageBroken] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(257);
   const [isCountdownFlashing, setIsCountdownFlashing] = useState(false);
@@ -168,13 +167,6 @@ function HomePage() {
 
   const leadingPlayer = useMemo(() => players.find((player) => player.leading) ?? players[0], [players]);
   const leadingOdds = useMemo(() => (1.25 + (100 - leadingPlayer.survival) / 75).toFixed(2), [leadingPlayer.survival]);
-
-  const remainingMinutes = useMemo(() => Math.max(0, Math.floor(secondsLeft / 60)), [secondsLeft]);
-
-  const tickerItems = useMemo(() => {
-    const resolved = homepageData.tickerMessages.map((message) => message.replace("{minutes}", String(remainingMinutes)));
-    return [...resolved, ...resolved];
-  }, [remainingMinutes]);
 
   const countdown = useMemo(() => {
     const h = Math.floor(secondsLeft / 3600);
@@ -221,15 +213,6 @@ function HomePage() {
       window.clearInterval(flashTimer);
     };
   }, [secondsLeft]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isDark) {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-  }, [isDark]);
 
   useEffect(() => {
     setWinnerImageBroken(false);
@@ -289,43 +272,9 @@ function HomePage() {
   };
 
   return (
-    <main className={`${styles.page} min-h-screen w-full overflow-x-hidden bg-[#fff8f0] text-[#2e1a10] dark:!bg-[#140b08] dark:!text-[#f2d0a4]`}>
+    <main className={`${styles.page} min-h-screen w-full overflow-x-hidden bg-[#fff8f0] text-[#2e1a10] dark:bg-[#140b08]! dark:text-[#f2d0a4]!`}>
       <div className={`${styles.root} min-h-screen`}>
         <h2 className="sr-only">Project Shutter Island - live arena platform</h2>
-
-        <div className={`${styles.ticker} dark:!border-b-[#5a2738]`}>
-          <div className={styles.tickerTrack}>
-            {tickerItems.map((message, index) => (
-              <span key={`${message}-${index}`} className={styles.tickerChunk}>
-                <span className={styles.tickerItem}>{message}</span>
-                <span className={styles.tickerDiamond}>{"\u25C6"}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <nav className={`${styles.nav} dark:!bg-[#1e100c] dark:!border-b-[#5a2738]`}>
-          <span className={`${styles.navBrand} dark:!text-[#f2d0a4]`}>Atlas Group</span>
-          <div className={styles.navLinks}>
-            <button type="button" className={`${styles.navLink} dark:!text-[#f2d0a4] dark:hover:!bg-[#5a2738]/30`}>Book Session</button>
-            <button type="button" className={`${styles.navLink} dark:!text-[#f2d0a4] dark:hover:!bg-[#5a2738]/30`}>Bet</button>
-            <button type="button" className={`${styles.navLink} dark:!text-[#f2d0a4] dark:hover:!bg-[#5a2738]/30`}>Watch</button>
-            <button
-              type="button"
-              className={`${styles.themeToggle} ${isDark ? styles.themeToggleOn : ""} dark:!border-[#A4303F]/60 dark:!bg-[#2a1410] dark:!text-[#FFECCC]`}
-              onClick={() => setIsDark((prev) => !prev)}
-              aria-label="Toggle dark mode"
-              aria-pressed={isDark}
-              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-            >
-              <span className={`${styles.themeToggleTrack} dark:!border-[#A4303F]/60 dark:!bg-[#401d17]`}>
-                <span className={styles.themeToggleThumb} />
-              </span>
-              <span className={styles.themeToggleText}>{isDark ? "Dark" : "Light"}</span>
-            </button>
-            <button type="button" className={`${styles.navCta} dark:!bg-[#A4303F] dark:hover:!bg-[#870058]`}>Enter Arena</button>
-          </div>
-        </nav>
 
         <section className={`${styles.hero} min-h-0`}>
           <div className={styles.heroMap}>
@@ -556,7 +505,12 @@ function HomePage() {
           </div>
 
           <div className={styles.sessionListPanel}>
-            <div className={styles.sessionListTitle}>UPCOMING SESSIONS</div>
+            <div className={styles.sessionListHeader}>
+              <div className={styles.sessionListTitle}>UPCOMING SESSIONS</div>
+              <a href="/sessions" className={styles.sessionListLink}>
+                View All Sessions
+              </a>
+            </div>
             {upcomingSessions.map((session) => (
               <article
                 key={`${session.id}-${dateKey(session.dateObj)}`}
@@ -597,26 +551,6 @@ function HomePage() {
             ))}
           </div>
         </section>
-
-        <div className={`${styles.statusBar} dark:!bg-[#1e100c] dark:!border-t-[#5a2738]`}>
-          <div className={styles.statItem}>
-            <div className={styles.statDotGreen} />
-            System Online
-          </div>
-          <div className={styles.statItem}>
-            Session
-            <span className={styles.statVal}>VII of XII</span>
-          </div>
-          <div className={styles.statItem}>
-            Players Active
-            <span className={styles.statVal}>5</span>
-          </div>
-          <div className={styles.statItem}>
-            Round
-            <span className={styles.statVal}>3</span>
-          </div>
-          <div className={styles.statBrand}>Atlas Systems Group - CSC490</div>
-        </div>
 
         <div className={`${styles.playersOverlay} ${overlayOpen ? styles.playersOverlayOpen : ""}`}>
           <div className={styles.overlayHeader}>

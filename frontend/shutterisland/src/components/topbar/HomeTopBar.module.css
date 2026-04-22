@@ -1,0 +1,236 @@
+.topBar {
+  --raspberry: #870058;
+  --cherry: #A4303F;
+  --apricot: #F2D0A4;
+  --papaya: #FFECCC;
+  --cream: #fff8f0;
+  --ink: #2e1a10;
+}
+
+:global(html.dark) .topBar {
+  --cream: #140b08;
+  --ink: #f2d0a4;
+}
+
+.ticker {
+  background: var(--cherry);
+  height: 30px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border-bottom: 1.5px solid var(--raspberry);
+}
+
+:global(html.dark) .ticker {
+  border-bottom-color: #5a2738;
+}
+
+.tickerTrack {
+  display: flex;
+  white-space: nowrap;
+  animation: scroll-left 32s linear infinite;
+}
+
+.tickerChunk {
+  display: flex;
+  align-items: center;
+}
+
+.tickerItem {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--papaya);
+  padding: 0 6px;
+}
+
+.tickerDiamond {
+  color: var(--apricot);
+  opacity: 0.6;
+  margin: 0 12px;
+  font-size: 12px;
+}
+
+.nav {
+  background: var(--cream);
+  border-bottom: 1px solid rgba(164, 48, 63, 0.2);
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+
+.navBrand {
+  font-family: "Cinzel Decorative", serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--raspberry);
+}
+
+:global(html.dark) .navBrand {
+  color: #f2d0a4;
+}
+
+.navLinks {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.navLink {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 3px;
+  color: var(--ink);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  opacity: 0.75;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.navLink:hover {
+  opacity: 1;
+  background: rgba(164, 48, 63, 0.07);
+}
+
+.navCta {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 7px 18px;
+  border-radius: 3px;
+  background: var(--raspberry);
+  color: var(--papaya);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.navCta:hover {
+  background: var(--cherry);
+}
+
+:global(html.dark) .navCta {
+  background: #A4303F;
+}
+
+:global(html.dark) .navCta:hover {
+  background: #870058;
+}
+
+.themeToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(164, 48, 63, 0.32);
+  border-radius: 999px;
+  background: rgba(164, 48, 63, 0.08);
+  color: var(--ink);
+  padding: 4px 8px 4px 5px;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.themeToggleTrack {
+  width: 30px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(164, 48, 63, 0.4);
+  background: rgba(164, 48, 63, 0.16);
+  padding: 1px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.themeToggleThumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--raspberry);
+  transform: translateX(0);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), background 0.18s ease;
+}
+
+.themeToggleText {
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  min-width: 30px;
+}
+
+.themeToggleOn {
+  background: rgba(135, 0, 88, 0.15);
+  border-color: rgba(135, 0, 88, 0.5);
+}
+
+.themeToggleOn .themeToggleThumb {
+  transform: translateX(14px);
+  background: var(--cherry);
+}
+
+:global(html.dark) .nav {
+  background: #1a0f0b;
+  border-bottom-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .navLink {
+  color: #f2d0a4;
+}
+
+:global(html.dark) .navLink:hover {
+  background: rgba(164, 48, 63, 0.28);
+}
+
+:global(html.dark) .themeToggle {
+  border-color: rgba(164, 48, 63, 0.6);
+  background: #2a1410;
+  color: #FFECCC;
+}
+
+:global(html.dark) .themeToggleTrack {
+  border-color: rgba(164, 48, 63, 0.6);
+  background: #401d17;
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 900px) {
+  .nav {
+    min-height: 50px;
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .navLinks {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding-bottom: 8px;
+  }
+
+  .themeToggle {
+    order: 4;
+  }
+}

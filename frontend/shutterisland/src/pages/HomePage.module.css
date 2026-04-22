@@ -1868,6 +1868,14 @@
   max-height: 420px;
 }
 
+.sessionListHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
 .sessionListTitle {
   font-family: "Cinzel", serif;
   font-size: 9px;
@@ -1875,7 +1883,29 @@
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: rgba(46, 26, 16, 0.45);
-  margin-bottom: 12px;
+}
+
+.sessionListLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid rgba(164, 48, 63, 0.22);
+  border-radius: 999px;
+  background: rgba(164, 48, 63, 0.06);
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #7d2d3c;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.sessionListLink:hover {
+  background: rgba(164, 48, 63, 0.12);
+  border-color: rgba(164, 48, 63, 0.4);
+  color: #5f1320;
 }
 
 .sessionEntry {
@@ -2122,6 +2152,18 @@
 
 :global(html.dark) .sessionListTitle {
   color: rgba(255, 236, 204, 0.5);
+}
+
+:global(html.dark) .sessionListLink {
+  background: rgba(164, 48, 63, 0.16);
+  border-color: rgba(164, 48, 63, 0.38);
+  color: rgba(255, 236, 204, 0.86);
+}
+
+:global(html.dark) .sessionListLink:hover {
+  background: rgba(164, 48, 63, 0.24);
+  border-color: rgba(201, 90, 115, 0.7);
+  color: #fff2de;
 }
 
 :global(html.dark) .sessionEntry {
