@@ -2,6 +2,7 @@ import homepageData from "./data/homepageData.json";
 import AppLayout from "./layouts/AppLayout";
 import HomePage from "./pages/HomePage";
 import SessionsPage from "./pages/SessionsPage";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const HOME_TICKER_ITEMS = homepageData.tickerMessages.map((message) =>
   message.replace("{minutes}", "4"),
@@ -18,6 +19,17 @@ const SESSIONS_TICKER_ITEMS = [
   "WATCH LIVE - PLACE YOUR BET",
 ];
 
+const ADMIN_TICKER_ITEMS = [
+  "ADMIN DASHBOARD ACTIVE",
+  "MONITORING SESSIONS LIVE",
+  "TRACKING PARTICIPANTS",
+  "SYSTEM STATUS NORMAL",
+  "ADMIN DASHBOARD ACTIVE",
+  "MONITORING SESSIONS LIVE",
+  "TRACKING PARTICIPANTS",
+  "SYSTEM STATUS NORMAL",
+];
+
 function resolvePage(pathname) {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
 
@@ -32,6 +44,18 @@ function resolvePage(pathname) {
         },
         render: (theme) => <SessionsPage {...theme} />,
       };
+
+    case "/admin":
+      return {
+        tickerItems: ADMIN_TICKER_ITEMS,
+        statusBarProps: {
+          sessionLabel: "ADMIN",
+          playersActive: "—",
+          round: "—",
+        },
+        render: () => <AdminDashboard />,
+      };
+
     case "/":
     default:
       return {
