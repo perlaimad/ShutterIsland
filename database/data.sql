@@ -58,7 +58,32 @@ INSERT INTO player (player_id, display_name, status, created_at) VALUES
 (22, 'Vera',   'Active',   '2026-04-10 09:21:00'),
 (23, 'Waleed', 'Active',   '2026-04-10 09:22:00'),
 (24, 'Yara',   'Active',   '2026-04-10 09:23:00'),
-(25, 'Zein',   'Disabled', '2026-04-10 09:24:00');
+(25, 'Zein',   'Disabled', '2026-04-10 09:24:00'),
+(26, 'Amina',  'Active',   '2026-04-10 09:25:00'),
+(27, 'Basil',  'Active',   '2026-04-10 09:26:00'),
+(28, 'Celine', 'Active',   '2026-04-10 09:27:00'),
+(29, 'Fadi',   'Active',   '2026-04-10 09:28:00'),
+(30, 'Ghada',  'Active',   '2026-04-10 09:29:00'),
+(31, 'Hassan', 'Active',   '2026-04-10 09:30:00'),
+(32, 'Ines',   'Active',   '2026-04-10 09:31:00'),
+(33, 'Jamil',  'Active',   '2026-04-10 09:32:00'),
+(34, 'Kinda',  'Active',   '2026-04-10 09:33:00'),
+(35, 'Leen',   'Active',   '2026-04-10 09:34:00'),
+(36, 'Majd',   'Active',   '2026-04-10 09:35:00'),
+(37, 'Nadine', 'Active',   '2026-04-10 09:36:00'),
+(38, 'Omara',  'Active',   '2026-04-10 09:37:00'),
+(39, 'Rami',   'Active',   '2026-04-10 09:38:00'),
+(40, 'Salma',  'Active',   '2026-04-10 09:39:00'),
+(41, 'Tarek',  'Active',   '2026-04-10 09:40:00'),
+(42, 'Ula',    'Active',   '2026-04-10 09:41:00'),
+(43, 'Wael',   'Active',   '2026-04-10 09:42:00'),
+(44, 'Xena',   'Active',   '2026-04-10 09:43:00'),
+(45, 'Yousef', 'Active',   '2026-04-10 09:44:00'),
+(46, 'Zara',   'Active',   '2026-04-10 09:45:00'),
+(47, 'Aseel',  'Active',   '2026-04-10 09:46:00'),
+(48, 'Bilal',  'Active',   '2026-04-10 09:47:00'),
+(49, 'Carla',  'Active',   '2026-04-10 09:48:00'),
+(50, 'Dany',   'Active',   '2026-04-10 09:49:00');
 
 -- =========================
 -- 3) Rooms
@@ -105,7 +130,14 @@ INSERT INTO game_session (
 (2, 'SES-102', 1, 3, 5, 'Active',    '2026-04-12 08:00:00', '2026-04-12 09:00:00', NULL),
 (3, 'SES-103', 2, 2, 4, 'Lobby',     '2026-04-12 10:15:00', NULL, NULL),
 (4, 'SES-104', 2, 3, 5, 'Paused',    '2026-04-12 07:30:00', '2026-04-12 08:15:00', NULL),
-(5, 'SES-105', 1, 2, 3, 'Cancelled', '2026-04-10 14:00:00', NULL, NULL);
+(5, 'SES-105', 1, 2, 3, 'Cancelled', '2026-04-10 14:00:00', NULL, NULL),
+(6, 'SES-106', 1, 3, 5, 'Finished',  '2026-04-13 08:30:00', '2026-04-13 09:00:00', '2026-04-13 10:05:00'),
+(7, 'SES-107', 2, 3, 5, 'Active',    '2026-04-17 08:15:00', '2026-04-17 09:00:00', NULL),
+(8, 'SES-108', 1, 3, 5, 'Lobby',     '2026-04-22 11:30:00', NULL, NULL),
+(9, 'SES-109', 2, 3, 5, 'Lobby',     '2026-04-22 12:00:00', NULL, NULL),
+(10,'SES-110', 1, 3, 5, 'Lobby',     '2026-04-28 10:00:00', NULL, NULL),
+(11,'SES-111', 2, 3, 5, 'Lobby',     '2026-05-05 10:30:00', NULL, NULL),
+(12,'SES-112', 1, 3, 5, 'Lobby',     '2026-05-12 11:00:00', NULL, NULL);
 
 -- =========================
 -- 7) Session Players
@@ -137,7 +169,48 @@ INSERT INTO session_player (session_id, player_id, slot_number, joined_at, is_al
 
 -- Session 5 Cancelled
 (5, 17, 1, '2026-04-10 14:05:00', 1, NULL, NULL),
-(5, 18, 2, '2026-04-10 14:05:05', 1, NULL, NULL);
+(5, 18, 2, '2026-04-10 14:05:05', 1, NULL, NULL),
+
+-- Session 6 Finished
+(6, 26, 1, '2026-04-13 08:50:00', 0, '2026-04-13 09:18:00', 4),
+(6, 27, 2, '2026-04-13 08:50:05', 0, '2026-04-13 09:34:00', 3),
+(6, 28, 3, '2026-04-13 08:50:10', 0, '2026-04-13 09:48:00', 2),
+(6, 29, 4, '2026-04-13 08:50:15', 1, NULL,                   1),
+
+-- Session 7 Active
+(7, 30, 1, '2026-04-17 08:50:00', 1, NULL, NULL),
+(7, 31, 2, '2026-04-17 08:50:05', 1, NULL, NULL),
+(7, 32, 3, '2026-04-17 08:50:10', 0, '2026-04-17 09:21:00', NULL),
+(7, 33, 4, '2026-04-17 08:50:15', 1, NULL, NULL),
+(7, 34, 5, '2026-04-17 08:50:20', 1, NULL, NULL),
+
+-- Session 8 Lobby
+(8, 35, 1, '2026-04-22 11:40:00', 1, NULL, NULL),
+(8, 36, 2, '2026-04-22 11:40:05', 1, NULL, NULL),
+(8, 37, 3, '2026-04-22 11:40:10', 1, NULL, NULL),
+(8, 38, 4, '2026-04-22 11:40:15', 1, NULL, NULL),
+
+-- Session 9 Lobby
+(9, 39, 1, '2026-04-22 12:10:00', 1, NULL, NULL),
+(9, 40, 2, '2026-04-22 12:10:05', 1, NULL, NULL),
+(9, 41, 3, '2026-04-22 12:10:10', 1, NULL, NULL),
+(9, 42, 4, '2026-04-22 12:10:15', 1, NULL, NULL),
+
+-- Session 10 Lobby
+(10, 43, 1, '2026-04-28 10:10:00', 1, NULL, NULL),
+(10, 44, 2, '2026-04-28 10:10:05', 1, NULL, NULL),
+(10, 45, 3, '2026-04-28 10:10:10', 1, NULL, NULL),
+(10, 46, 4, '2026-04-28 10:10:15', 1, NULL, NULL),
+
+-- Session 11 Lobby
+(11, 47, 1, '2026-05-05 10:40:00', 1, NULL, NULL),
+(11, 48, 2, '2026-05-05 10:40:05', 1, NULL, NULL),
+(11, 49, 3, '2026-05-05 10:40:10', 1, NULL, NULL),
+
+-- Session 12 Lobby
+(12, 50, 1, '2026-05-12 11:10:00', 1, NULL, NULL),
+(12, 39, 2, '2026-05-12 11:10:05', 1, NULL, NULL),
+(12, 40, 3, '2026-05-12 11:10:10', 1, NULL, NULL);
 
 -- =========================
 -- 8) Session Rooms
@@ -168,7 +241,40 @@ INSERT INTO session_room (
 (13, 4, 3, 3, 'Active',    '2026-04-12 08:45:10', NULL,                   1, NULL),
 
 -- Session 5
-(14, 5, 1, 1, 'Failed',    NULL,                  NULL,                   1, NULL);
+(14, 5, 1, 1, 'Failed',    NULL,                  NULL,                   1, NULL),
+
+-- Session 6
+(15, 6, 1, 1, 'Completed', '2026-04-13 09:00:00', '2026-04-13 09:12:00', 1, '2026-04-13 09:12:05'),
+(16, 6, 2, 2, 'Completed', '2026-04-13 09:12:10', '2026-04-13 09:28:00', 1, '2026-04-13 09:28:05'),
+(17, 6, 3, 3, 'Completed', '2026-04-13 09:28:10', '2026-04-13 09:40:00', 1, '2026-04-13 09:40:05'),
+(18, 6, 4, 4, 'Completed', '2026-04-13 09:40:10', '2026-04-13 09:54:00', 1, '2026-04-13 09:54:05'),
+(19, 6, 5, 5, 'Completed', '2026-04-13 09:54:10', '2026-04-13 10:05:00', 1, NULL),
+
+-- Session 7
+(20, 7, 1, 1, 'Completed', '2026-04-17 09:00:00', '2026-04-17 09:10:00', 1, '2026-04-17 09:10:05'),
+(21, 7, 2, 2, 'Completed', '2026-04-17 09:10:10', '2026-04-17 09:22:00', 1, '2026-04-17 09:22:05'),
+(22, 7, 3, 3, 'Active',    '2026-04-17 09:22:10', NULL,                   1, NULL),
+(23, 7, 4, 4, 'Locked',    NULL,                  NULL,                   1, NULL),
+
+-- Session 8
+(24, 8, 1, 1, 'Pending',   NULL,                  NULL,                   1, NULL),
+(25, 8, 2, 2, 'Locked',    NULL,                  NULL,                   1, NULL),
+
+-- Session 9
+(26, 9, 1, 1, 'Pending',   NULL,                  NULL,                   1, NULL),
+(27, 9, 2, 2, 'Locked',    NULL,                  NULL,                   1, NULL),
+
+-- Session 10
+(28, 10, 1, 1, 'Pending',  NULL,                  NULL,                   1, NULL),
+(29, 10, 2, 2, 'Locked',   NULL,                  NULL,                   1, NULL),
+
+-- Session 11
+(30, 11, 1, 1, 'Pending',  NULL,                  NULL,                   1, NULL),
+(31, 11, 2, 2, 'Locked',   NULL,                  NULL,                   1, NULL),
+
+-- Session 12
+(32, 12, 1, 1, 'Pending',  NULL,                  NULL,                   1, NULL),
+(33, 12, 2, 2, 'Locked',   NULL,                  NULL,                   1, NULL);
 
 -- =========================
 -- 9) Session Room Players
@@ -229,7 +335,49 @@ INSERT INTO session_room_player (session_room_id, player_id, entered_at, status)
 -- Session 4, Room 3
 (13, 13, '2026-04-12 08:45:10', 'Active'),
 (13, 15, '2026-04-12 08:45:10', 'Active'),
-(13, 16, '2026-04-12 08:45:10', 'Active');
+(13, 16, '2026-04-12 08:45:10', 'Active'),
+
+-- Session 6, Room 1
+(15, 26, '2026-04-13 09:00:00', 'EliminatedInThisRoom'),
+(15, 27, '2026-04-13 09:00:00', 'SurvivedRoom'),
+(15, 28, '2026-04-13 09:00:00', 'SurvivedRoom'),
+(15, 29, '2026-04-13 09:00:00', 'SurvivedRoom'),
+
+-- Session 6, Room 2
+(16, 27, '2026-04-13 09:12:10', 'EliminatedInThisRoom'),
+(16, 28, '2026-04-13 09:12:10', 'SurvivedRoom'),
+(16, 29, '2026-04-13 09:12:10', 'SurvivedRoom'),
+
+-- Session 6, Room 3
+(17, 28, '2026-04-13 09:28:10', 'SurvivedRoom'),
+(17, 29, '2026-04-13 09:28:10', 'SurvivedRoom'),
+
+-- Session 6, Room 4
+(18, 28, '2026-04-13 09:40:10', 'EliminatedInThisRoom'),
+(18, 29, '2026-04-13 09:40:10', 'SurvivedRoom'),
+
+-- Session 6, Room 5
+(19, 29, '2026-04-13 09:54:10', 'SurvivedRoom'),
+
+-- Session 7, Room 1
+(20, 30, '2026-04-17 09:00:00', 'SurvivedRoom'),
+(20, 31, '2026-04-17 09:00:00', 'SurvivedRoom'),
+(20, 32, '2026-04-17 09:00:00', 'SurvivedRoom'),
+(20, 33, '2026-04-17 09:00:00', 'SurvivedRoom'),
+(20, 34, '2026-04-17 09:00:00', 'SurvivedRoom'),
+
+-- Session 7, Room 2
+(21, 30, '2026-04-17 09:10:10', 'SurvivedRoom'),
+(21, 31, '2026-04-17 09:10:10', 'SurvivedRoom'),
+(21, 32, '2026-04-17 09:10:10', 'EliminatedInThisRoom'),
+(21, 33, '2026-04-17 09:10:10', 'SurvivedRoom'),
+(21, 34, '2026-04-17 09:10:10', 'SurvivedRoom'),
+
+-- Session 7, Room 3
+(22, 30, '2026-04-17 09:22:10', 'Active'),
+(22, 31, '2026-04-17 09:22:10', 'Active'),
+(22, 33, '2026-04-17 09:22:10', 'Active'),
+(22, 34, '2026-04-17 09:22:10', 'Active');
 
 -- =========================
 -- 10) Eliminations
@@ -239,7 +387,11 @@ INSERT INTO elimination (elimination_id, session_id, session_room_id, player_id,
 (2, 1, 2, 2,  'Wrong answer in Mirror Hall', '2026-04-11 10:35:00'),
 (3, 1, 4, 3,  'Failed hazard sequence in Red Chamber', '2026-04-11 10:50:00'),
 (4, 2, 6, 7,  'Missed unlock condition in Entry Gate', '2026-04-12 09:18:00'),
-(5, 4, 12, 14, 'Failed cooperative sync in Mirror Hall', '2026-04-12 08:40:00');
+(5, 4, 12, 14, 'Failed cooperative sync in Mirror Hall', '2026-04-12 08:40:00'),
+(6, 6, 15, 26, 'Timed out in Entry Gate', '2026-04-13 09:18:00'),
+(7, 6, 16, 27, 'Wrong answer in Mirror Hall', '2026-04-13 09:34:00'),
+(8, 6, 18, 28, 'Hazard sequence failure in Red Chamber', '2026-04-13 09:48:00'),
+(9, 7, 21, 32, 'Lost coordination during Trust Trial', '2026-04-17 09:21:00');
 
 -- =========================
 -- 11) Environment Events
@@ -258,7 +410,16 @@ INSERT INTO environment_event (
 (9, 2, 7, 'PlayerEliminated', JSON_OBJECT('player_id', 7, 'reason', 'late_input'), 'Manager', 3, '2026-04-12 09:18:00'),
 (10, 2, 7, 'LevelProgressionUpdate', JSON_OBJECT('current_room', 2, 'remaining_players', 4), 'System', NULL, '2026-04-12 09:19:00'),
 (11, 4, 11, 'SessionStarted', JSON_OBJECT('note', 'Paused session test'), 'Manager', 2, '2026-04-12 08:15:00'),
-(12, 4, 12, 'SessionPaused', JSON_OBJECT('reason', 'manual pause for safety check'), 'Manager', 2, '2026-04-12 08:50:00');
+(12, 4, 12, 'SessionPaused', JSON_OBJECT('reason', 'manual pause for safety check'), 'Manager', 2, '2026-04-12 08:50:00'),
+(13, 6, 15, 'SessionStarted', JSON_OBJECT('note', 'Session 6 launched'), 'Manager', 1, '2026-04-13 09:00:00'),
+(14, 6, 15, 'CountdownActivated', JSON_OBJECT('seconds', 300, 'challengeId', 1), 'System', NULL, '2026-04-13 09:00:05'),
+(15, 6, 15, 'PlayerEliminated', JSON_OBJECT('player_id', 26, 'reason', 'timeout'), 'Manager', 1, '2026-04-13 09:18:00'),
+(16, 6, 16, 'DoorUnlocked', JSON_OBJECT('next_room_index', 2), 'System', NULL, '2026-04-13 09:12:05'),
+(17, 6, 16, 'MirrorPuzzleCompleted', JSON_OBJECT('team_size', 3, 'challengeId', 3), 'System', NULL, '2026-04-13 09:28:00'),
+(18, 7, 20, 'SessionStarted', JSON_OBJECT('note', 'Live session monitoring'), 'Manager', 2, '2026-04-17 09:00:00'),
+(19, 7, 20, 'RoomCompleted', JSON_OBJECT('room_index', 1), 'System', NULL, '2026-04-17 09:10:00'),
+(20, 7, 21, 'PlayerEliminated', JSON_OBJECT('player_id', 32, 'reason', 'coordination_failure'), 'Manager', 2, '2026-04-17 09:21:00'),
+(21, 7, 22, 'LevelProgressionUpdate', JSON_OBJECT('current_room', 3, 'remaining_players', 4), 'System', NULL, '2026-04-17 09:23:00');
 
 -- =========================
 -- 12) Live Streams
@@ -268,7 +429,9 @@ INSERT INTO live_stream (
 ) VALUES
 (1, 1, 'Ended',   'https://stream.example.com/ses101', 'AES256', '2026-04-11 10:00:00', '2026-04-11 11:10:00', '2026-04-11 09:58:00'),
 (2, 2, 'Live',    'https://stream.example.com/ses102', 'AES256', '2026-04-12 09:00:00', NULL,                   '2026-04-12 08:58:00'),
-(3, 4, 'Paused',  'https://stream.example.com/ses104', 'AES256', '2026-04-12 08:15:00', NULL,                   '2026-04-12 08:10:00');
+(3, 4, 'Paused',  'https://stream.example.com/ses104', 'AES256', '2026-04-12 08:15:00', NULL,                   '2026-04-12 08:10:00'),
+(4, 6, 'Ended',   'https://stream.example.com/ses106', 'AES256', '2026-04-13 09:00:00', '2026-04-13 10:05:00', '2026-04-13 08:58:00'),
+(5, 7, 'Live',    'https://stream.example.com/ses107', 'AES256', '2026-04-17 09:00:00', NULL,                   '2026-04-17 08:57:00');
 
 -- =========================
 -- 13) Viewer Access Keys
@@ -302,7 +465,25 @@ INSERT INTO audit_log (audit_id, manager_id, session_id, action_type, action_tim
 (11,2, 4, 'CREATE_SESSION',      '2026-04-12 07:30:00', JSON_OBJECT('session_code', 'SES-104')),
 (12,2, 4, 'PAUSE_SESSION',       '2026-04-12 08:50:00', JSON_OBJECT('reason', 'Safety review')),
 
-(13,1, 5, 'CANCEL_SESSION',      '2026-04-10 15:00:00', JSON_OBJECT('reason', 'Insufficient resources'));
+(13,1, 5, 'CANCEL_SESSION',      '2026-04-10 15:00:00', JSON_OBJECT('reason', 'Insufficient resources')),
+
+(14,1, 6, 'CREATE_SESSION',      '2026-04-13 08:30:00', JSON_OBJECT('session_code', 'SES-106')),
+(15,1, 6, 'START_SESSION',       '2026-04-13 09:00:00', JSON_OBJECT('started_by', 'admin_nour')),
+(16,1, 6, 'ELIMINATE_PLAYER',    '2026-04-13 09:18:00', JSON_OBJECT('player_id', 26)),
+(17,1, 6, 'ELIMINATE_PLAYER',    '2026-04-13 09:34:00', JSON_OBJECT('player_id', 27)),
+(18,1, 6, 'ELIMINATE_PLAYER',    '2026-04-13 09:48:00', JSON_OBJECT('player_id', 28)),
+(19,1, 6, 'FINISH_SESSION',      '2026-04-13 10:05:00', JSON_OBJECT('winner_player_id', 29)),
+
+(20,2, 7, 'CREATE_SESSION',      '2026-04-17 08:15:00', JSON_OBJECT('session_code', 'SES-107')),
+(21,2, 7, 'START_SESSION',       '2026-04-17 09:00:00', JSON_OBJECT('started_by', 'admin_rami')),
+(22,2, 7, 'UPDATE_PLAYER_STATUS','2026-04-17 09:21:00', JSON_OBJECT('player_id', 32, 'new_status', 'Eliminated')),
+(23,2, 7, 'LOG_EVENT',           '2026-04-17 09:23:00', JSON_OBJECT('event_type', 'LevelProgressionUpdate')),
+
+(24,1, 8, 'CREATE_SESSION',      '2026-04-22 11:30:00', JSON_OBJECT('session_code', 'SES-108')),
+(25,2, 9, 'CREATE_SESSION',      '2026-04-22 12:00:00', JSON_OBJECT('session_code', 'SES-109')),
+(26,1, 10, 'CREATE_SESSION',     '2026-04-28 10:00:00', JSON_OBJECT('session_code', 'SES-110')),
+(27,2, 11, 'CREATE_SESSION',     '2026-05-05 10:30:00', JSON_OBJECT('session_code', 'SES-111')),
+(28,1, 12, 'CREATE_SESSION',     '2026-05-12 11:00:00', JSON_OBJECT('session_code', 'SES-112'));
 
 -- =========================
 -- 15) Bets
@@ -325,29 +506,3 @@ INSERT INTO bet (
 -- Session 4 pending/paused
 (8, 4, 3, 13, 'viewer6@example.com', 'FinalWinner',      '13',       18.00, NULL, 'Pending',  '2026-04-12 08:20:00', NULL);
 
--- =========================
--- Extra useful queries to test with
--- =========================
-
--- active sessions
--- SELECT * FROM game_session WHERE status = 'Active';
-
--- session 2 participants with names
--- SELECT sp.session_id, p.display_name, sp.slot_number, sp.is_alive, sp.eliminated_at
--- FROM session_player sp
--- JOIN player p ON p.player_id = sp.player_id
--- WHERE sp.session_id = 2
--- ORDER BY sp.slot_number;
-
--- session 2 progression
--- SELECT * FROM session_room WHERE session_id = 2 ORDER BY room_index;
-
--- session 2 eliminations
--- SELECT e.*, p.display_name
--- FROM elimination e
--- JOIN player p ON p.player_id = e.player_id
--- WHERE e.session_id = 2
--- ORDER BY e.ts;
-
--- audit log
--- SELECT * FROM audit_log ORDER BY action_time DESC;

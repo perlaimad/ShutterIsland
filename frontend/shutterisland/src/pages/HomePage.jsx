@@ -23,6 +23,11 @@ function dateKey(date) {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 }
 
+function getSessionHref(session) {
+  const identifier = session?.id ?? session?.code ?? "";
+  return `/sessions/${encodeURIComponent(identifier)}`;
+}
+
 function MapGraphic({ markers }) {
   const arenaPath =
     "M120,18 C138,14 158,22 170,36 C185,52 188,68 184,84 C192,96 196,112 190,128 C196,144 194,162 182,174 C188,190 184,208 172,220 C160,234 142,242 124,246 C106,250 88,246 74,236 C58,228 50,212 48,196 C36,184 30,166 34,150 C26,136 26,118 34,104 C28,88 32,70 44,58 C54,44 70,34 86,26 C96,20 108,20 120,18 Z";
@@ -512,8 +517,9 @@ function HomePage() {
               </a>
             </div>
             {upcomingSessions.map((session) => (
-              <article
+              <a
                 key={`${session.id}-${dateKey(session.dateObj)}`}
+                href={getSessionHref(session)}
                 className={`${styles.sessionEntry} ${session.status === "live" ? styles.sessionEntryLive : ""}`}
               >
                 <div>
@@ -547,7 +553,7 @@ function HomePage() {
                           : "TBD"}
                   </div>
                 </div>
-              </article>
+              </a>
             ))}
           </div>
         </section>

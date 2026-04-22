@@ -20,67 +20,72 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
    ============================================================ */
 const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL ?? "/api";
 
+function getSessionHref(session) {
+  const identifier = session?.id ?? session?.code ?? "";
+  return `/sessions/${encodeURIComponent(identifier)}`;
+}
+
 /* ============================================================
    2. SESSIONS SERVICE  (src/services/sessionsService.js)
    ============================================================ */
 const MOCK_SESSIONS = [
   {
-    id: "SI-001", code: "I", date: "2026-03-06", time: "19:00",
+    id: "1", code: "I", date: "2026-03-06", time: "19:00",
     status: "finished", players: 8, capacity: 8, pool: "$41,200",
     note: "Concluded", winner: "Tariq Nasr", duration: "2h 18m",
   },
   {
-    id: "SI-002", code: "II", date: "2026-03-13", time: "19:00",
+    id: "2", code: "II", date: "2026-03-13", time: "19:00",
     status: "finished", players: 8, capacity: 8, pool: "$38,750",
     note: "Concluded", winner: "Sera Mikkelsen", duration: "1h 54m",
   },
   {
-    id: "SI-003", code: "III", date: "2026-03-20", time: "20:00",
+    id: "3", code: "III", date: "2026-03-20", time: "20:00",
     status: "finished", players: 8, capacity: 8, pool: "$45,100",
     note: "Concluded", winner: "Dario Vale", duration: "2h 06m",
   },
   {
-    id: "SI-004", code: "IV", date: "2026-03-27", time: "19:30",
+    id: "4", code: "IV", date: "2026-03-27", time: "19:30",
     status: "finished", players: 8, capacity: 8, pool: "$52,000",
     note: "Concluded", winner: "Tariq Nasr", duration: "2h 41m",
   },
   {
-    id: "SI-005", code: "V", date: "2026-04-03", time: "19:00",
+    id: "5", code: "V", date: "2026-04-03", time: "19:00",
     status: "finished", players: 8, capacity: 8, pool: "$49,800",
     note: "Concluded", winner: "Yara Cross", duration: "2h 03m",
   },
   {
-    id: "SI-006", code: "VI", date: "2026-04-06", time: "20:00",
+    id: "6", code: "VI", date: "2026-04-06", time: "20:00",
     status: "finished", players: 8, capacity: 8, pool: "$61,300",
     note: "Concluded", winner: "Felix Osei", duration: "1h 47m",
   },
   {
-    id: "SI-007", code: "VII", date: "2026-04-11", time: "20:00",
+    id: "7", code: "VII", date: "2026-04-11", time: "20:00",
     status: "live", players: 5, capacity: 8, pool: "$104,402",
     note: "Live Now", round: 3, timeLeft: "00:04:17",
   },
   {
-    id: "SI-008", code: "VIII", date: "2026-04-17", time: "19:00",
+    id: "8", code: "VIII", date: "2026-04-17", time: "19:00",
     status: "open", players: 6, capacity: 8, pool: "TBD",
     note: "Booking Open", spotsLeft: 2,
   },
   {
-    id: "SI-009", code: "IX", date: "2026-04-22", time: "20:00",
+    id: "9", code: "IX", date: "2026-04-22", time: "20:00",
     status: "upcoming", players: 0, capacity: 8, pool: "TBD",
     note: "Opens Soon",
   },
   {
-    id: "SI-010", code: "X", date: "2026-04-28", time: "19:30",
+    id: "10", code: "X", date: "2026-04-28", time: "19:30",
     status: "upcoming", players: 0, capacity: 8, pool: "TBD",
     note: "Opens Soon",
   },
   {
-    id: "SI-011", code: "XI", date: "2026-05-05", time: "19:00",
+    id: "11", code: "XI", date: "2026-05-05", time: "19:00",
     status: "upcoming", players: 0, capacity: 8, pool: "TBD",
     note: "Opens Soon",
   },
   {
-    id: "SI-012", code: "XII", date: "2026-05-12", time: "20:00",
+    id: "12", code: "XII", date: "2026-05-12", time: "20:00",
     status: "upcoming", players: 0, capacity: 8, pool: "TBD",
     note: "Opens Soon",
   },
@@ -205,6 +210,7 @@ function StatusBadge({ status, size = "sm" }) {
    ============================================================ */
 function SessionCard({ session, featured = false }) {
   const dateObj = new Date(session.date);
+  const sessionHref = getSessionHref(session);
   const dateStr = dateObj.toLocaleDateString("en-US", {
     month: "short", day: "numeric", year: "numeric",
   }).toUpperCase();
@@ -255,6 +261,9 @@ function SessionCard({ session, featured = false }) {
       e.currentTarget.style.boxShadow = session.status === "live"
         ? "0 0 0 1px rgba(164,48,63,0.18), 0 8px 32px rgba(164,48,63,0.12)"
         : "0 4px 16px rgba(0,0,0,0.32)";
+    }}
+    onClick={() => {
+      window.location.href = sessionHref;
     }}
     >
       {/* Corner decoration */}
@@ -420,6 +429,10 @@ function SessionCard({ session, featured = false }) {
           }}
           onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.82"; e.currentTarget.style.transform = "translateY(-1px)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
+          onClick={(event) => {
+            event.stopPropagation();
+            window.location.href = sessionHref;
+          }}
         >
           {actionBtn.label}
         </button>
@@ -433,6 +446,7 @@ function SessionCard({ session, featured = false }) {
    ============================================================ */
 function FeaturedSessionBanner({ session }) {
   const [viewers, setViewers] = useState(1204);
+  const sessionHref = getSessionHref(session);
   useEffect(() => {
     const t = setInterval(() => {
       setViewers((v) => Math.max(0, v + Math.floor(Math.random() * 7) - 2));
@@ -518,6 +532,9 @@ function FeaturedSessionBanner({ session }) {
               letterSpacing: "0.14em", padding: "10px 24px", borderRadius: 3,
               background: "#A4303F", color: "#FFECCC", border: "none", cursor: "pointer",
               transition: "background 0.15s",
+            }}
+            onClick={() => {
+              window.location.href = sessionHref;
             }}>
               ▶  Watch Live
             </button>
@@ -526,6 +543,9 @@ function FeaturedSessionBanner({ session }) {
               letterSpacing: "0.14em", padding: "10px 20px", borderRadius: 3,
               background: "rgba(164,48,63,0.14)", color: "#FF9999",
               border: "1px solid rgba(164,48,63,0.35)", cursor: "pointer",
+            }}
+            onClick={() => {
+              window.location.href = sessionHref;
             }}>
               Place Bet
             </button>

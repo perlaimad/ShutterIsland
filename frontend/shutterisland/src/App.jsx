@@ -3,6 +3,7 @@ import AppLayout from "./layouts/AppLayout";
 import HomePage from "./pages/HomePage";
 import SessionsPage from "./pages/SessionsPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import SessionDetailsPage from "./pages/SessionDetailsPage";
 
 const HOME_TICKER_ITEMS = homepageData.tickerMessages.map((message) =>
   message.replace("{minutes}", "4"),
@@ -33,6 +34,18 @@ const ADMIN_TICKER_ITEMS = [
 function resolvePage(pathname) {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
 
+  if (/^\/sessions\/[^/]+$/i.test(normalizedPath)) {
+    return {
+      tickerItems: SESSIONS_TICKER_ITEMS,
+      statusBarProps: {
+        sessionLabel: "SESSION",
+        playersActive: "LIVE",
+        round: "DETAILS",
+      },
+      render: () => <SessionDetailsPage />,
+    };
+  }
+
   switch (normalizedPath) {
     case "/sessions":
       return {
@@ -45,7 +58,7 @@ function resolvePage(pathname) {
         render: (theme) => <SessionsPage {...theme} />,
       };
 
-    case "/admin":
+    case "/dashboard":
       return {
         tickerItems: ADMIN_TICKER_ITEMS,
         statusBarProps: {
