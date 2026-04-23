@@ -1,0 +1,80 @@
+.statusBar {
+  --jungle: #45B06C;
+  --ink: #2e1a10;
+  background: #fdf4e7;
+  border-top: 1px solid rgba(164, 48, 63, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 9px 28px;
+  flex-wrap: wrap;
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: rgba(46, 26, 16, 0.5);
+  text-transform: uppercase;
+}
+
+.statDotGreen {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--jungle);
+}
+
+.statVal {
+  font-weight: 700;
+  color: var(--ink);
+  margin-left: 4px;
+}
+
+.statBrand {
+  margin-left: auto;
+  font-family: "Cinzel", serif;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  text-transform: uppercase;
+}
+
+:global(html.dark) .statusBar {
+  background: #1a0f0b;
+  border-top-color: rgba(164, 48, 63, 0.45);
+}
+
+:global(html.dark) .statItem {
+  color: rgba(255, 236, 204, 0.68);
+}
+
+:global(html.dark) .statVal {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .statBrand {
+  color: rgba(255, 236, 204, 0.5);
+  text-shadow: none;
+}
+
+@media (max-width: 900px) {
+  .statusBar {
+    gap: 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  .statusBar {
+    padding: 10px 16px;
+  }
+
+  .statBrand {
+    width: 100%;
+    margin-left: 0;
+  }
+}

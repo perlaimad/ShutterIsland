@@ -1,15 +1,98 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import homepageData from "./data/homepageData.json";
+import AppLayout from "./layouts/AppLayout";
 import HomePage from "./pages/HomePage";
+import SessionsPage from "./pages/SessionsPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import SessionDetailsPage from "./pages/SessionDetailsPage";
+
+const HOME_TICKER_ITEMS = homepageData.tickerMessages.map((message) =>
+  message.replace("{minutes}", "4"),
+);
+
+const SESSIONS_TICKER_ITEMS = [
+  "SESSION VII LIVE NOW - 5 PLAYERS REMAIN",
+  "SESSION VIII BOOKING OPEN - 2 SPOTS LEFT",
+  "SESSION IX OPENS APR 22",
+  "WATCH LIVE - PLACE YOUR BET",
+  "SESSION VII LIVE NOW - 5 PLAYERS REMAIN",
+  "SESSION VIII BOOKING OPEN - 2 SPOTS LEFT",
+  "SESSION IX OPENS APR 22",
+  "WATCH LIVE - PLACE YOUR BET",
+];
+
+const ADMIN_TICKER_ITEMS = [
+  "ADMIN DASHBOARD ACTIVE",
+  "MONITORING SESSIONS LIVE",
+  "TRACKING PARTICIPANTS",
+  "SYSTEM STATUS NORMAL",
+  "ADMIN DASHBOARD ACTIVE",
+  "MONITORING SESSIONS LIVE",
+  "TRACKING PARTICIPANTS",
+  "SYSTEM STATUS NORMAL",
+];
+
+function resolvePage(pathname) {
+  const normalizedPath = pathname.replace(/\/+$/, "") || "/";
+
+  if (/^\/sessions\/[^/]+$/i.test(normalizedPath)) {
+    return {
+      tickerItems: SESSIONS_TICKER_ITEMS,
+      statusBarProps: {
+        sessionLabel: "SESSION",
+        playersActive: "LIVE",
+        round: "DETAILS",
+      },
+      render: () => <SessionDetailsPage />,
+    };
+  }
+
+  switch (normalizedPath) {
+    case "/sessions":
+      return {
+        tickerItems: SESSIONS_TICKER_ITEMS,
+        statusBarProps: {
+          sessionLabel: "VII of XII",
+          playersActive: "5",
+          round: "3",
+        },
+        render: (theme) => <SessionsPage {...theme} />,
+      };
+
+    case "/dashboard":
+      return {
+        tickerItems: ADMIN_TICKER_ITEMS,
+        statusBarProps: {
+          sessionLabel: "ADMIN",
+          playersActive: "—",
+          round: "—",
+        },
+        render: () => <AdminDashboard />,
+      };
+
+    case "/":
+    default:
+      return {
+        tickerItems: HOME_TICKER_ITEMS,
+        statusBarProps: {
+          sessionLabel: "VII of XII",
+          playersActive: "5",
+          round: "3",
+        },
+        render: () => <HomePage />,
+      };
+  }
+}
 
 function App() {
+  const page = resolvePage(window.location.pathname);
+
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-      </Routes>
-    </Router>
+    <AppLayout
+      tickerItems={page.tickerItems}
+      statusBarProps={page.statusBarProps}
+    >
+      {(theme) => page.render(theme)}
+    </AppLayout>
   );
 }
 
