@@ -1,7 +1,229 @@
 import { Router } from "express";
 import { pool } from "../../config/db.js";
+import { publishAdminEvent, subscribeAdminStream } from "../../common/realtime/sse.js";
 
 export const monitoringReportingRouter = Router();
+
+const asPositiveInteger = (value) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
+const toIsoString = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+};
+
+const findSessionByIdentifier = async (connection, identifier) => {
+  const numericId = asPositiveInteger(identifier);
+  const [rows] = await connection.execute(
+    `SELECT
+       session_id,
+       session_code,
+       status,
+       created_at,
+       started_at,
+       ended_at
+     FROM game_session
+     WHERE session_id = ? OR LOWER(session_code) = LOWER(?)
+     LIMIT 1`,
+    [numericId ?? 0, String(identifier || "").trim()]
+  );
+
+  return rows[0] ?? null;
+};
+
+const getElapsedSeconds = (startedAt, eventAt) => {
+  if (!startedAt || !eventAt) {
+    return null;
+  }
+
+  const start = new Date(startedAt);
+  const eventTime = new Date(eventAt);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(eventTime.getTime())) {
+    return null;
+  }
+
+  return Math.max(0, Math.floor((eventTime - start) / 1000));
+};
+
+monitoringReportingRouter.get("/admin/stream", (req, res) => {
+  subscribeAdminStream(req, res);
+});
+
+monitoringReportingRouter.get("/sessions/:sessionIdentifier/eliminations", async (req, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const session = await findSessionByIdentifier(connection, req.params.sessionIdentifier);
+
+    if (!session) {
+      return res.status(404).json({
+        message: "Session not found.",
+      });
+    }
+
+    const [rows] = await connection.execute(
+      `SELECT
+         e.elimination_id,
+         e.player_id,
+         e.reason,
+         e.ts,
+         p.display_name,
+         sr.session_room_id,
+         sr.room_index,
+         r.room_id,
+         r.name AS room_name
+       FROM elimination e
+       JOIN player p
+         ON p.player_id = e.player_id
+       JOIN session_room sr
+         ON sr.session_room_id = e.session_room_id
+       JOIN room r
+         ON r.room_id = sr.room_id
+       WHERE e.session_id = ?
+       ORDER BY e.ts DESC, e.elimination_id DESC`,
+      [session.session_id]
+    );
+
+    return res.json({
+      session: {
+        sessionId: Number(session.session_id),
+        id: session.session_code,
+        status: String(session.status || "").toLowerCase(),
+        startsAt: toIsoString(session.started_at ?? session.created_at),
+        endedAt: toIsoString(session.ended_at),
+      },
+      eliminations: rows.map((row) => ({
+        eliminationId: Number(row.elimination_id),
+        playerId: Number(row.player_id),
+        playerName: row.display_name,
+        room: {
+          sessionRoomId: Number(row.session_room_id),
+          roomId: Number(row.room_id),
+          roomIndex: Number(row.room_index),
+          roomName: row.room_name,
+        },
+        reason: row.reason,
+        eliminatedAt: toIsoString(row.ts),
+        eliminatedAtSeconds: getElapsedSeconds(session.started_at, row.ts),
+      })),
+    });
+  } catch (error) {
+    console.error("Eliminations error:", error);
+    return res.status(500).json({
+      message: "Failed to load elimination feed",
+      error: error.message,
+    });
+  } finally {
+    connection.release();
+  }
+});
+
+monitoringReportingRouter.get("/sessions/:sessionIdentifier/positions/latest", async (req, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const session = await findSessionByIdentifier(connection, req.params.sessionIdentifier);
+
+    if (!session) {
+      return res.status(404).json({
+        message: "Session not found.",
+      });
+    }
+
+    const [rows] = await connection.execute(
+      `SELECT
+         sp.player_id,
+         p.display_name,
+         sp.slot_number,
+         sp.joined_at,
+         latest_srp.entered_at,
+         latest_srp.status AS room_player_status,
+         sr.session_room_id,
+         sr.room_index,
+         sr.status AS room_status,
+         r.room_id,
+         r.name AS room_name,
+         r.difficulty_level
+       FROM session_player sp
+       JOIN player p
+         ON p.player_id = sp.player_id
+       LEFT JOIN (
+         SELECT srp1.session_room_id, srp1.player_id, srp1.entered_at, srp1.status
+         FROM session_room_player srp1
+         INNER JOIN (
+           SELECT
+             srp.player_id,
+             MAX(CONCAT(
+               DATE_FORMAT(srp.entered_at, '%Y%m%d%H%i%s'),
+               LPAD(srp.session_room_id, 10, '0')
+             )) AS latest_marker
+           FROM session_room_player srp
+           JOIN session_room sr
+             ON sr.session_room_id = srp.session_room_id
+           WHERE sr.session_id = ?
+           GROUP BY srp.player_id
+         ) latest
+           ON latest.player_id = srp1.player_id
+          AND CONCAT(
+            DATE_FORMAT(srp1.entered_at, '%Y%m%d%H%i%s'),
+            LPAD(srp1.session_room_id, 10, '0')
+          ) = latest.latest_marker
+       ) latest_srp
+         ON latest_srp.player_id = sp.player_id
+       LEFT JOIN session_room sr
+         ON sr.session_room_id = latest_srp.session_room_id
+       LEFT JOIN room r
+         ON r.room_id = sr.room_id
+       WHERE sp.session_id = ?
+         AND sp.is_alive = 1
+       ORDER BY COALESCE(sr.room_index, 0) DESC, sp.slot_number ASC, sp.player_id ASC`,
+      [session.session_id, session.session_id]
+    );
+
+    return res.json({
+      session: {
+        sessionId: Number(session.session_id),
+        id: session.session_code,
+        status: String(session.status || "").toLowerCase(),
+        startsAt: toIsoString(session.started_at ?? session.created_at),
+        endedAt: toIsoString(session.ended_at),
+      },
+      positions: rows.map((row, index) => ({
+        snapshotId: `session-${session.session_id}-player-${row.player_id}`,
+        playerId: Number(row.player_id),
+        playerName: row.display_name,
+        slotNumber: Number(row.slot_number),
+        room: row.session_room_id ? {
+          sessionRoomId: Number(row.session_room_id),
+          roomId: Number(row.room_id),
+          roomIndex: Number(row.room_index),
+          roomName: row.room_name,
+          roomStatus: row.room_status,
+          difficultyLevel: row.difficulty_level === null ? null : Number(row.difficulty_level),
+        } : null,
+        state: row.room_player_status ?? "Active",
+        capturedAt: toIsoString(row.entered_at ?? row.joined_at),
+        capturedAtSeconds: getElapsedSeconds(session.started_at, row.entered_at ?? row.joined_at),
+        order: index + 1,
+      })),
+    });
+  } catch (error) {
+    console.error("Latest positions error:", error);
+    return res.status(500).json({
+      message: "Failed to load latest position snapshots",
+      error: error.message,
+    });
+  } finally {
+    connection.release();
+  }
+});
 
 monitoringReportingRouter.get("/admin/dashboard/overview", async (req, res) => {
   try {
@@ -267,6 +489,13 @@ monitoringReportingRouter.post("/admin/logs/audit", async (req, res) => {
     res.status(201).json({
       message: "Audit log created successfully",
       auditId: result.insertId,
+    });
+
+    publishAdminEvent({
+      type: "audit_log_created",
+      sessionId,
+      scope: sessionId ? "session" : "all",
+      reason: actionType,
     });
   } catch (error) {
     console.error("Audit log insert error:", error);

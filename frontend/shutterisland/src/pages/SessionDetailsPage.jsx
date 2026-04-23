@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./SessionDetailsPage.module.css";
+import { useAdminRealtime } from "../hooks/useAdminRealtime";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
-const POLL_INTERVAL_MS = 5000;
 const REQUEST_TIMEOUT_MS = 5000;
 
 function formatDateTime(value) {
@@ -389,13 +389,23 @@ function SessionDetailsPage() {
 
   useEffect(() => {
     loadSessionDetails();
-
-    const poller = window.setInterval(() => {
-      loadSessionDetails({ silent: true });
-    }, POLL_INTERVAL_MS);
-
-    return () => window.clearInterval(poller);
   }, [loadSessionDetails]);
+
+  const liveSessionId = bundle.metrics?.sourceSessionId ?? bundle.session?.session_id ?? null;
+
+  const handleRealtimeUpdate = useCallback((event) => {
+    const eventSessionId = Number(event?.sessionId);
+
+    if (!Number.isFinite(eventSessionId) || !liveSessionId || eventSessionId === Number(liveSessionId)) {
+      loadSessionDetails({ silent: true });
+    }
+  }, [liveSessionId, loadSessionDetails]);
+
+  useAdminRealtime({
+    enabled: true,
+    sessionId: liveSessionId,
+    onUpdate: handleRealtimeUpdate,
+  });
 
   const session = bundle.session || {};
   const participants = Array.isArray(bundle.participants) ? bundle.participants : [];

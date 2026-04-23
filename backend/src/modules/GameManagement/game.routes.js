@@ -21,6 +21,7 @@ import {
   synchronizeGameState,
   triggerChallengeSequence
 } from "./game.service.js";
+import { publishAdminEvent } from "../../common/realtime/sse.js";
 
 export const gameManagementRouter = Router();
 
@@ -46,6 +47,14 @@ const handleTimerAction = (action) => async (req, res) => {
 
   try {
     const timer = await action(sessionId, req.body);
+    if (req.method === "POST" && timer) {
+      publishAdminEvent({
+        type: "session_timer_updated",
+        sessionId,
+        scope: "session",
+        reason: req.path,
+      });
+    }
     return sendTimerResult(res, timer);
   } catch (error) {
     return res.status(error.statusCode ?? 500).json({
@@ -71,6 +80,14 @@ const handleChallengeAction = (action) => async (req, res) => {
 
   try {
     const result = await action(sessionId, req.body, req);
+    if (req.method === "POST" && result) {
+      publishAdminEvent({
+        type: "session_state_updated",
+        sessionId,
+        scope: "session",
+        reason: req.path,
+      });
+    }
     return sendChallengeResult(res, result);
   } catch (error) {
     return res.status(error.statusCode ?? 500).json({

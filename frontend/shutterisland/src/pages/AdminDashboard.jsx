@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -13,9 +13,9 @@ import {
   YAxis,
 } from "recharts";
 import styles from "./AdminDashboard.module.css";
+import { useAdminRealtime } from "../hooks/useAdminRealtime";
 
 const API_BASE = import.meta.env?.VITE_API_URL ?? "http://localhost:4000";
-const POLL_MS = 5000;
 
 const COLORS = {
   raspberry: "#870058",
@@ -527,6 +527,188 @@ function ReportPreviewChart({ title, subtitle, type, data, valueFormatter }) {
   );
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function toCsv(rows) {
+  if (!rows.length) return "";
+
+  const headers = Object.keys(rows[0]);
+  const serialize = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+  const lines = [
+    headers.map(serialize).join(","),
+    ...rows.map((row) => headers.map((header) => serialize(row[header])).join(",")),
+  ];
+
+  return lines.join("\n");
+}
+
+function downloadBlob(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function buildReportHtml(report) {
+  const generatedAt = escapeHtml(report.generatedAt);
+  const summaryCards = report.summary
+    .map((item) => `
+      <div class="summary-card">
+        <div class="summary-label">${escapeHtml(item.label)}</div>
+        <div class="summary-value">${escapeHtml(item.value)}</div>
+      </div>
+    `)
+    .join("");
+
+  const insightItems = report.insights
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+
+  const tableHeaders = report.table.columns
+    .map((column) => `<th>${escapeHtml(column.label)}</th>`)
+    .join("");
+
+  const tableRows = report.table.rows
+    .map((row) => `
+      <tr>
+        ${report.table.columns.map((column) => `<td>${escapeHtml(row[column.key])}</td>`).join("")}
+      </tr>
+    `)
+    .join("");
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(report.title)}</title>
+    <style>
+      body { font-family: Georgia, serif; background: #fdf4e7; color: #2e1a10; margin: 0; padding: 32px; }
+      .shell { max-width: 1080px; margin: 0 auto; }
+      .eyebrow { color: #a4303f; text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px; }
+      h1 { margin: 8px 0 6px; font-size: 34px; }
+      .subtitle { color: #6c5144; margin-bottom: 24px; }
+      .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 24px 0; }
+      .summary-card { background: #fff8f0; border: 1px solid rgba(164, 48, 63, 0.18); padding: 16px; border-radius: 10px; }
+      .summary-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #7b6a63; margin-bottom: 8px; }
+      .summary-value { font-size: 24px; font-weight: 700; color: #870058; }
+      .panel { background: #fff8f0; border: 1px solid rgba(164, 48, 63, 0.18); border-radius: 10px; padding: 20px; margin-top: 18px; }
+      h2 { margin-top: 0; font-size: 18px; }
+      ul { margin: 0; padding-left: 20px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+      th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid rgba(164, 48, 63, 0.12); font-size: 14px; }
+      th { color: #7b6a63; text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+      .footer { margin-top: 20px; color: #7b6a63; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="eyebrow">Shutter Island Monitoring Report</div>
+      <h1>${escapeHtml(report.title)}</h1>
+      <div class="subtitle">${escapeHtml(report.subtitle)}</div>
+      <div class="summary">${summaryCards}</div>
+      <div class="panel">
+        <h2>Highlights</h2>
+        <ul>${insightItems}</ul>
+      </div>
+      <div class="panel">
+        <h2>${escapeHtml(report.table.title)}</h2>
+        <table>
+          <thead><tr>${tableHeaders}</tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <div class="footer">Generated ${generatedAt}</div>
+    </div>
+  </body>
+</html>`;
+}
+
+function ReportModal({ report, onClose, onDownloadHtml, onDownloadCsv }) {
+  if (!report) return null;
+
+  return (
+    <div className={styles.reportOverlay} role="dialog" aria-modal="true" aria-label={report.title}>
+      <div className={styles.reportModal}>
+        <div className={styles.reportModalHeader}>
+          <div>
+            <div className={styles.reportModalEyebrow}>Shutter Island Report</div>
+            <h2 className={styles.reportModalTitle}>{report.title}</h2>
+            <div className={styles.reportModalSub}>{report.subtitle}</div>
+          </div>
+          <button type="button" className={styles.reportClose} onClick={onClose}>Close</button>
+        </div>
+
+        <div className={styles.reportMeta}>Generated {report.generatedAt}</div>
+
+        <div className={styles.reportSummaryGrid}>
+          {report.summary.map((item) => (
+            <div key={item.label} className={styles.reportSummaryCard}>
+              <div className={styles.reportSummaryLabel}>{item.label}</div>
+              <div className={styles.reportSummaryValue}>{item.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.reportSection}>
+          <div className={styles.reportSectionTitle}>Highlights</div>
+          <div className={styles.reportInsightList}>
+            {report.insights.map((item) => (
+              <div key={item} className={styles.reportInsightItem}>{item}</div>
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.reportSection}>
+          <div className={styles.reportSectionTitle}>{report.table.title}</div>
+          <div className={styles.reportTableWrap}>
+            <table className={styles.reportTable}>
+              <thead>
+                <tr>
+                  {report.table.columns.map((column) => (
+                    <th key={column.key}>{column.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {report.table.rows.map((row, index) => (
+                  <tr key={`${report.key}-${index}`}>
+                    {report.table.columns.map((column) => (
+                      <td key={column.key}>{row[column.key]}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className={styles.reportActions}>
+          <button type="button" className={`${styles.ctaBtn} ${styles.ctaBtnSecondary}`} onClick={onDownloadCsv}>
+            Export CSV
+          </button>
+          <button type="button" className={`${styles.ctaBtn} ${styles.ctaBtnStart}`} onClick={onDownloadHtml}>
+            Download Report
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AnalyticsPanel({ occupancyData, statusBreakdown, progressionBreakdown }) {
   return (
     <div className={styles.analyticsGrid}>
@@ -573,10 +755,9 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
   const [reportLoading, setReportLoading] = useState(null);
+  const [activeReport, setActiveReport] = useState(null);
   const [error, setError] = useState(null);
   const [lastRefreshed, setLastRefreshed] = useState(null);
-
-  const pollRef = useRef(null);
 
   const fetchAll = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -591,6 +772,7 @@ function AdminDashboard() {
       const normalizedSessions = Array.isArray(sessionsData)
         ? sessionsData.map((session) => ({
             id: session.id ?? session.sessionCode ?? session.session_id,
+            sessionId: session.sessionId ?? session.session_id ?? null,
             name: session.name ?? session.sessionCode ?? session.id,
             room: session.room ?? null,
             round: session.round ?? session.level ?? null,
@@ -618,9 +800,12 @@ function AdminDashboard() {
   const fetchSessionDetail = useCallback(async (sessionId) => {
     if (!sessionId) return;
 
+    const selectedSessionEntry = (sessions ?? []).find((session) => session.id === sessionId);
+    const backendSessionId = selectedSessionEntry?.sessionId ?? sessionId;
+
     const [participantsData, progressionData, logsData] = await Promise.all([
       apiGet("/api/admin/dashboard/participants", fallbackParticipants),
-      apiGet(`/api/game-management/sessions/${sessionId}/levels/progression`, fallbackProgression),
+      apiGet(`/api/game-management/sessions/${backendSessionId}/levels/progression`, fallbackProgression),
       apiGet("/api/admin/logs/audit", fallbackLogs),
     ]);
 
@@ -648,24 +833,25 @@ function AdminDashboard() {
     setParticipants(normalizedParticipants);
     setProgression(normalizedProgression);
     setLogs(normalizedLogs);
-  }, []);
+  }, [sessions]);
 
   const handleAction = useCallback(async (sessionId, action) => {
     setActionLoading(sessionId);
     try {
-      await apiPost(`/api/sessions/${sessionId}/${action}`);
+      const selectedSessionEntry = (sessions ?? []).find((session) => session.id === sessionId);
+      const backendSessionId = selectedSessionEntry?.sessionId ?? sessionId;
+
+      await apiPost(`/api/sessions/${backendSessionId}/${action}`);
       await fetchAll(true);
     } catch {
       setError(`Action "${action}" failed for ${sessionId}.`);
     } finally {
       setActionLoading(null);
     }
-  }, [fetchAll]);
+  }, [fetchAll, sessions]);
 
   useEffect(() => {
     fetchAll();
-    pollRef.current = setInterval(() => fetchAll(true), POLL_MS);
-    return () => clearInterval(pollRef.current);
   }, [fetchAll]);
 
   useEffect(() => {
@@ -673,6 +859,29 @@ function AdminDashboard() {
       fetchSessionDetail(selectedSession);
     }
   }, [fetchSessionDetail, selectedSession]);
+
+  const handleRealtimeUpdate = useCallback((event) => {
+    fetchAll(true);
+
+    const eventSessionId = Number(event?.sessionId);
+    const selectedNumericId = Number(
+      sessions.find((session) => session.id === selectedSession)?.sessionId
+        ?? sessions.find((session) => session.id === selectedSession)?.id,
+    );
+
+    if (!selectedSession) {
+      return;
+    }
+
+    if (!Number.isFinite(eventSessionId) || !Number.isFinite(selectedNumericId) || eventSessionId === selectedNumericId) {
+      fetchSessionDetail(selectedSession);
+    }
+  }, [fetchAll, fetchSessionDetail, selectedSession, sessions]);
+
+  useAdminRealtime({
+    enabled: true,
+    onUpdate: handleRealtimeUpdate,
+  });
 
   const selectedSessionObj = sessions.find((session) => session.id === selectedSession);
 
@@ -745,7 +954,138 @@ function AdminDashboard() {
     };
   }, [analytics]);
 
-  const downloadReport = useCallback(async (key, path, fallbackData) => {
+  const createReportModel = useCallback((key, data) => {
+    const generatedAt = new Date().toLocaleString();
+
+    if (key === "participant-summary") {
+      const totalPlayers = Number(data.totalPlayers ?? participants.length ?? 0);
+      const activePlayers = Number(data.activePlayers ?? analytics.statusBreakdown.find((item) => item.label === "Active")?.value ?? 0);
+      const eliminatedPlayers = Number(data.eliminatedPlayers ?? analytics.statusBreakdown.find((item) => item.label === "Eliminated")?.value ?? 0);
+      const completionMix = analytics.progressionBreakdown;
+
+      return {
+        key,
+        title: "Participant Progression Report",
+        subtitle: selectedSessionObj
+          ? `Progress snapshot for ${selectedSessionObj.name ?? selectedSessionObj.id}`
+          : "Overall participant progression across the monitored flow",
+        generatedAt,
+        summary: [
+          { label: "Total Participants", value: totalPlayers },
+          { label: "Active Players", value: activePlayers },
+          { label: "Eliminated", value: eliminatedPlayers },
+          { label: "Tracked Stages", value: progression.length || 0 },
+        ],
+        insights: [
+          `${activePlayers} participants are still active in the monitored pool.`,
+          `${eliminatedPlayers} participants have been removed from progression so far.`,
+          `${completionMix.find((item) => item.label === "Completed")?.count ?? 0} stages are fully completed in the current path.`,
+        ],
+        table: {
+          title: "Participant Breakdown",
+          columns: [
+            { key: "name", label: "Participant" },
+            { key: "session", label: "Session" },
+            { key: "level", label: "Level" },
+            { key: "status", label: "Status" },
+            { key: "lastUpdate", label: "Last Update" },
+          ],
+          rows: (participants ?? []).map((participant) => ({
+            name: participant.name ?? participant.id,
+            session: participant.session ?? "-",
+            level: participant.level ?? "-",
+            status: normalizeStatus(participant.status),
+            lastUpdate: participant.update ? formatTimestamp(participant.update) : "-",
+          })),
+        },
+      };
+    }
+
+    if (key === "session-performance") {
+      const sessionsData = Array.isArray(data) ? data : [];
+      const liveSessions = sessionsData.filter((session) => normalizeStatus(session.status) === "Active").length;
+      const finishedSessions = sessionsData.filter((session) => normalizeStatus(session.status) === "Finished").length;
+      const avgOccupancy = analytics.occupancyData.length
+        ? `${Math.round(analytics.occupancyData.reduce((sum, item) => sum + item.occupancy, 0) / analytics.occupancyData.length)}%`
+        : "0%";
+
+      return {
+        key,
+        title: "Session Performance Report",
+        subtitle: "Operational summary across live and completed sessions",
+        generatedAt,
+        summary: [
+          { label: "Tracked Sessions", value: sessionsData.length },
+          { label: "Live Sessions", value: liveSessions },
+          { label: "Finished Sessions", value: finishedSessions },
+          { label: "Average Occupancy", value: avgOccupancy },
+        ],
+        insights: [
+          `${liveSessions} sessions are currently active and visible to monitoring.`,
+          `${finishedSessions} sessions have already completed and are available for historical review.`,
+          `Average occupancy across the tracked session set is ${avgOccupancy}.`,
+        ],
+        table: {
+          title: "Session Breakdown",
+          columns: [
+            { key: "session", label: "Session" },
+            { key: "room", label: "Room" },
+            { key: "players", label: "Players" },
+            { key: "capacity", label: "Capacity" },
+            { key: "occupancy", label: "Occupancy" },
+            { key: "status", label: "Status" },
+          ],
+          rows: sessionsData.map((session) => ({
+            session: session.name ?? session.id,
+            room: session.room ?? "-",
+            players: Number(session.participants ?? 0),
+            capacity: Number(session.capacity ?? 0),
+            occupancy: `${Math.min(100, Math.round(((Number(session.participants ?? 0)) / (Number(session.capacity ?? 1) || 1)) * 100))}%`,
+            status: normalizeStatus(session.status),
+          })),
+        },
+      };
+    }
+
+    const logsData = Array.isArray(data) ? data : [];
+    const uniqueAdmins = new Set(logsData.map((log) => log.admin ?? log.managerUsername ?? log.managerId).filter(Boolean)).size;
+    const latestAction = logsData[0]?.action ?? logsData[0]?.actionType ?? "No recent actions";
+
+    return {
+      key,
+      title: "Administrative History Report",
+      subtitle: "Recent actions taken during live monitoring and session control",
+      generatedAt,
+      summary: [
+        { label: "Logged Actions", value: logsData.length },
+        { label: "Distinct Admins", value: uniqueAdmins },
+        { label: "Latest Action", value: latestAction },
+        { label: "Selected Session", value: selectedSessionObj?.name ?? "All Sessions" },
+      ],
+      insights: [
+        `${logsData.length} recent audit entries are included in this report window.`,
+        `${uniqueAdmins} administrators contributed to the visible action history.`,
+        `Most recent recorded activity: ${latestAction}.`,
+      ],
+      table: {
+        title: "Audit Timeline",
+        columns: [
+          { key: "time", label: "Time" },
+          { key: "admin", label: "Admin" },
+          { key: "action", label: "Action" },
+          { key: "target", label: "Target" },
+        ],
+        rows: logsData.map((log) => ({
+          time: log.time ?? formatTimestamp(log.actionTime),
+          admin: log.admin ?? log.managerUsername ?? `Manager ${log.managerId ?? "-"}`,
+          action: log.action ?? log.actionType,
+          target: log.target ?? (log.sessionId ? `Session ${log.sessionId}` : "-"),
+        })),
+      },
+    };
+  }, [analytics, participants, progression.length, selectedSessionObj]);
+
+  const openReport = useCallback(async (key, path, fallbackData) => {
     setReportLoading(key);
     setError(null);
 
@@ -754,37 +1094,39 @@ function AdminDashboard() {
       if (!res.ok) throw new Error(`${res.status}`);
 
       const data = await res.json();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-
-      link.href = url;
-      link.download = `${key}-report.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
+      setActiveReport(createReportModel(key, data));
     } catch {
-      const blob = new Blob([JSON.stringify(fallbackData, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-
-      link.href = url;
-      link.download = `${key}-report-fallback.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
+      setActiveReport(createReportModel(key, fallbackData));
       setError("Some reports are still using fallback data because the backend report endpoint is unavailable.");
     } finally {
       setReportLoading(null);
     }
-  }, []);
+  }, [createReportModel]);
 
   return (
     <main className={`${styles.page} min-h-screen w-full overflow-x-hidden`}>
       <div className={styles.root}>
         <ErrorBanner message={error} onDismiss={() => setError(null)} />
+        <ReportModal
+          report={activeReport}
+          onClose={() => setActiveReport(null)}
+          onDownloadHtml={() => {
+            if (!activeReport) return;
+            downloadBlob(
+              `${activeReport.key}-report.html`,
+              buildReportHtml(activeReport),
+              "text/html;charset=utf-8",
+            );
+          }}
+          onDownloadCsv={() => {
+            if (!activeReport) return;
+            downloadBlob(
+              `${activeReport.key}-report.csv`,
+              toCsv(activeReport.table.rows),
+              "text/csv;charset=utf-8",
+            );
+          }}
+        />
 
         <section className={styles.hero}>
           <div className={styles.heroLeft}>
@@ -877,13 +1219,13 @@ function AdminDashboard() {
                   type="button"
                   className={`${styles.ctaBtn} ${styles.ctaBtnSecondary} ${styles.reportBtn}`}
                   disabled={reportLoading === "participant-summary"}
-                  onClick={() => downloadReport("participant-summary", "/api/admin/reports/participant-summary", {
+                  onClick={() => openReport("participant-summary", "/api/admin/reports/participant-summary", {
                     selectedSession,
                     participants,
                     progression,
                   })}
                 >
-                  {reportLoading === "participant-summary" ? "Generating..." : "Generate"}
+                  {reportLoading === "participant-summary" ? "Generating..." : "Generate Report"}
                 </button>
               </div>
               <div className={styles.reportCard}>
@@ -900,9 +1242,9 @@ function AdminDashboard() {
                   type="button"
                   className={`${styles.ctaBtn} ${styles.ctaBtnSecondary} ${styles.reportBtn}`}
                   disabled={reportLoading === "session-performance"}
-                  onClick={() => downloadReport("session-performance", "/api/admin/reports/session-performance", sessions)}
+                  onClick={() => openReport("session-performance", "/api/admin/reports/session-performance", sessions)}
                 >
-                  {reportLoading === "session-performance" ? "Generating..." : "Generate"}
+                  {reportLoading === "session-performance" ? "Generating..." : "Generate Report"}
                 </button>
               </div>
               <div className={styles.reportCard}>
@@ -919,9 +1261,9 @@ function AdminDashboard() {
                   type="button"
                   className={`${styles.ctaBtn} ${styles.ctaBtnSecondary} ${styles.reportBtn}`}
                   disabled={reportLoading === "audit-log"}
-                  onClick={() => downloadReport("audit-log", "/api/admin/logs/audit", logs)}
+                  onClick={() => openReport("audit-log", "/api/admin/logs/audit", logs)}
                 >
-                  {reportLoading === "audit-log" ? "Generating..." : "Generate"}
+                  {reportLoading === "audit-log" ? "Generating..." : "Generate Report"}
                 </button>
               </div>
             </div>
