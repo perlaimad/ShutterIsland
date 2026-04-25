@@ -362,3 +362,53 @@ CREATE TABLE audit_log (
     FOREIGN KEY (session_id) REFERENCES game_session(session_id)
     ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
+
+
+
+CREATE TABLE bet (
+  bet_id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  session_id        BIGINT UNSIGNED NOT NULL,
+  stream_id         BIGINT UNSIGNED NOT NULL,
+  player_id         BIGINT UNSIGNED NULL DEFAULT NULL,
+  viewer_identifier VARCHAR(255) NOT NULL,
+  bet_type          ENUM(
+                        'SurvivalDuration',
+                        'EliminationOrder',
+                        'FinalWinner',
+                        'RoomSurvival',
+                        'Custom'
+                     ) NOT NULL,
+  predicted_value   VARCHAR(255) NOT NULL,
+  bet_amount        DECIMAL(10,2) NOT NULL,
+  actual_value      VARCHAR(255) NULL DEFAULT NULL,
+  bet_status        ENUM('Pending','Won','Lost','Cancelled')
+                     NOT NULL DEFAULT 'Pending',
+  placed_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  settled_at        TIMESTAMP NULL DEFAULT NULL,
+
+  PRIMARY KEY (bet_id),
+  KEY idx_bet_session (session_id),
+  KEY idx_bet_stream (stream_id),
+  KEY idx_bet_player (player_id),
+  KEY idx_bet_status (bet_status),
+
+  CONSTRAINT fk_bet_session
+    FOREIGN KEY (session_id)
+    REFERENCES game_session(session_id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+
+  CONSTRAINT fk_bet_stream
+    FOREIGN KEY (stream_id)
+    REFERENCES live_stream(stream_id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+
+  CONSTRAINT fk_bet_player
+    FOREIGN KEY (player_id)
+    REFERENCES player(player_id)
+    ON DELETE SET NULL ON UPDATE CASCADE,
+
+  CONSTRAINT chk_bet_amount
+    CHECK (bet_amount > 0),
+  CONSTRAINT chk_bet_settlement_time
+    CHECK (settled_at IS NULL OR settled_at >= placed_at)
+) ENGINE=InnoDB;

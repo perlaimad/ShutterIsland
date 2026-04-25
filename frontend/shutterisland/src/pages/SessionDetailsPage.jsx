@@ -59,10 +59,19 @@ function statusTone(status) {
 
 function getSessionCodeFromPath() {
   const segments = window.location.pathname.split("/").filter(Boolean);
-  return segments[1] || segments[0] || "";
+  const rawValue = segments[1] || segments[0] || "";
+  try {
+    return decodeURIComponent(rawValue);
+  } catch {
+    return rawValue;
+  }
 }
 
 async function fetchJson(path) {
+  return requestJson(path);
+}
+
+async function requestJson(path, options = {}) {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -70,7 +79,10 @@ async function fetchJson(path) {
     const response = await fetch(`${API_BASE}${path}`, {
       headers: {
         "Content-Type": "application/json",
+        ...(options.headers || {}),
       },
+      method: options.method || "GET",
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
       signal: controller.signal,
     });
 
@@ -261,6 +273,9 @@ function SessionDetailsPage() {
     metrics: null,
     source: "unknown",
   });
+  const [actionLoading, setActionLoading] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
   const backendOffline = isBackendOfflineError(error);
 
   const loadSessionDetails = useCallback(async ({ silent = false } = {}) => {
@@ -284,16 +299,32 @@ function SessionDetailsPage() {
         matchesSessionIdentifier(entry, sessionCode),
       );
 
-      if (!sessionEntry) {
+      const parsedSessionIdFromUrl = Number(sessionCode);
+      const numericSessionIdFromUrl = Number.isInteger(parsedSessionIdFromUrl) && parsedSessionIdFromUrl > 0
+        ? parsedSessionIdFromUrl
+        : null;
+
+      const resolvedSessionEntry = sessionEntry || (numericSessionIdFromUrl
+        ? {
+            id: sessionCode,
+            sessionId: numericSessionIdFromUrl,
+            status: "Unknown",
+            participants: null,
+            room: null,
+          }
+        : null);
+
+      if (!resolvedSessionEntry) {
         throw new Error(`No backend session matched "${sessionCode}".`);
       }
 
-      const numericSessionId = Number(sessionEntry.sessionId);
+      const numericSessionId = Number(resolvedSessionEntry.sessionId);
       if (!Number.isFinite(numericSessionId) || numericSessionId <= 0) {
         throw new Error(`Session "${sessionCode}" does not have a valid backend session ID.`);
       }
 
       const [
+        adminSessionData,
         sessionPerformanceReport,
         participantsData,
         auditLogsData,
@@ -301,6 +332,7 @@ function SessionDetailsPage() {
         syncStateData,
         performanceFlowData,
       ] = await Promise.all([
+        fetchJsonOrDefault(`/api/session-administration/sessions/${numericSessionId}`, null),
         fetchJsonOrDefault("/api/admin/reports/session-performance", []),
         fetchJsonOrDefault("/api/admin/dashboard/participants", []),
         fetchJsonOrDefault("/api/admin/logs/audit", []),
@@ -336,22 +368,31 @@ function SessionDetailsPage() {
       const currentRoom = progressionData?.currentRoom || syncStateData?.currentRoom || null;
       const latestLog = logs[0] ?? null;
       const perfSummary = performanceFlowData?.summary ?? null;
+      const adminSession = adminSessionData?.session ?? null;
 
       const session = {
         session_id: numericSessionId,
-        sessionCode: sessionEntry.id ?? sessionCode,
-        name: sessionEntry.name ?? `Session ${sessionEntry.id ?? sessionCode}`,
-        status: sessionEntry.status ?? performanceEntry?.status ?? progressionData?.sessionStatus ?? syncStateData?.sessionStatus ?? "Unknown",
-        room: sessionEntry.room ?? currentRoom?.roomName ?? null,
+        sessionCode: adminSession?.sessionCode ?? resolvedSessionEntry.id ?? sessionCode,
+        name: resolvedSessionEntry.name ?? `Session ${adminSession?.sessionCode ?? resolvedSessionEntry.id ?? sessionCode}`,
+        status:
+          adminSession?.status
+          ?? resolvedSessionEntry.status
+          ?? performanceEntry?.status
+          ?? progressionData?.sessionStatus
+          ?? syncStateData?.sessionStatus
+          ?? "Unknown",
+        room: resolvedSessionEntry.room ?? currentRoom?.roomName ?? null,
         currentRoom: currentRoom?.roomName ?? null,
         currentLevel: currentRoom?.roomName || (currentRoom?.difficultyLevel ? `Level ${currentRoom.difficultyLevel}` : null),
         createdAt: performanceEntry?.createdAt ?? null,
+        minPlayers: adminSession?.minPlayers ?? null,
+        maxPlayers: adminSession?.maxPlayers ?? null,
         startedAt: performanceEntry?.startedAt ?? performanceFlowData?.startedAt ?? syncStateData?.timer?.startedAt ?? null,
         endedAt: performanceEntry?.endedAt ?? performanceFlowData?.endedAt ?? syncStateData?.timer?.endedAt ?? null,
         updatedAt: latestLog?.timestamp ?? null,
-        capacity: sessionEntry.capacity ?? null,
-        attendance: performanceEntry?.totalPlayers ?? sessionEntry.participants ?? participants.length,
-        totalParticipants: performanceEntry?.totalPlayers ?? sessionEntry.participants ?? participants.length,
+        capacity: adminSession?.maxPlayers ?? resolvedSessionEntry.capacity ?? null,
+        attendance: performanceEntry?.totalPlayers ?? resolvedSessionEntry.participants ?? participants.length,
+        totalParticipants: performanceEntry?.totalPlayers ?? resolvedSessionEntry.participants ?? participants.length,
         checkedInCount: performanceEntry?.alivePlayers ?? perfSummary?.aliveCount ?? null,
         assignedAdmin: latestLog?.actorName ?? null,
       };
@@ -401,6 +442,8 @@ function SessionDetailsPage() {
   const participants = Array.isArray(bundle.participants) ? bundle.participants : [];
   const progression = Array.isArray(bundle.progression) ? bundle.progression : [];
   const logs = Array.isArray(bundle.logs) ? bundle.logs : [];
+  const numericSessionId = Number(session.session_id || session.sessionId || bundle.metrics?.sourceSessionId);
+  const hasValidSessionId = Number.isFinite(numericSessionId) && numericSessionId > 0;
 
   useEffect(() => {
     if (!timelineRef.current || progression.length <= 3) {
@@ -513,6 +556,69 @@ function SessionDetailsPage() {
       .map((key) => [key, bundle.metrics[key]]);
   }, [bundle.metrics]);
 
+  const normalizedSessionStatus = normalizeStatus(session.status || session.state || session.currentState).toLowerCase();
+  const canTerminateSession = ["lobby", "active", "paused"].includes(normalizedSessionStatus);
+  const canDeleteSession = ["lobby", "finished", "cancelled", "terminated"].includes(normalizedSessionStatus);
+
+  const clearActionMessages = useCallback(() => {
+    setActionError("");
+    setActionSuccess("");
+  }, []);
+
+  const runSessionAction = useCallback(
+    async ({ path, method, body, successMessage, onSuccess }) => {
+      if (!hasValidSessionId) {
+        setActionError("Could not resolve a valid session ID.");
+        return;
+      }
+
+      clearActionMessages();
+      setActionLoading(path);
+
+      try {
+        const response = await requestJson(path, { method, body });
+        setActionSuccess(successMessage);
+        if (typeof onSuccess === "function") {
+          await onSuccess(response);
+        } else {
+          await loadSessionDetails({ silent: true });
+        }
+      } catch (actionErr) {
+        setActionError(actionErr?.message || "Session action failed.");
+      } finally {
+        setActionLoading("");
+      }
+    },
+    [clearActionMessages, hasValidSessionId, loadSessionDetails],
+  );
+
+  const handleTerminateSession = async () => {
+    if (!window.confirm("Terminate this session now?")) {
+      return;
+    }
+
+    await runSessionAction({
+      path: `/api/session-administration/sessions/${numericSessionId}/terminate`,
+      method: "POST",
+      successMessage: "Session terminated.",
+    });
+  };
+
+  const handleDeleteSession = async () => {
+    if (!window.confirm("Delete this session permanently? This cannot be undone.")) {
+      return;
+    }
+
+    await runSessionAction({
+      path: `/api/session-administration/sessions/${numericSessionId}`,
+      method: "DELETE",
+      successMessage: "Session removed successfully.",
+      onSuccess: async () => {
+        window.location.href = "/sessions";
+      },
+    });
+  };
+
   const pageTitle =
     session.name ||
     session.title ||
@@ -561,6 +667,22 @@ function SessionDetailsPage() {
                 disabled={refreshing}
               >
                 {refreshing ? "Refreshing..." : "Refresh"}
+              </button>
+              <button
+                type="button"
+                className={styles.warnButton}
+                disabled={!canTerminateSession || Boolean(actionLoading)}
+                onClick={handleTerminateSession}
+              >
+                Terminate
+              </button>
+              <button
+                type="button"
+                className={styles.dangerButton}
+                disabled={!canDeleteSession || Boolean(actionLoading)}
+                onClick={handleDeleteSession}
+              >
+                Delete
               </button>
             </div>
           </div>
@@ -615,6 +737,8 @@ function SessionDetailsPage() {
             </div>
           </div>
         </div>
+        {actionError ? <div className={styles.stateCardError}>{actionError}</div> : null}
+        {actionSuccess ? <div className={styles.stateCard}>{actionSuccess}</div> : null}
 
         {loading ? (
           <div className={styles.stateCard}>Loading session details...</div>
