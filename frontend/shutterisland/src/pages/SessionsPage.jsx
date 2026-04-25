@@ -21,6 +21,15 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL
   ?? `${import.meta?.env?.VITE_API_URL ?? "http://localhost:4000"}/api`;
 
+function mapBackendStatusToCardStatus(status) {
+  const normalized = String(status || "").trim().toLowerCase();
+  if (normalized === "active") return "live";
+  if (normalized === "paused") return "closed";
+  if (normalized === "finished") return "finished";
+  if (normalized === "cancelled") return "cancelled";
+  return "upcoming";
+}
+
 function getSessionHref(session) {
   const identifier = session?.id ?? session?.code ?? "";
   return `/sessions/${encodeURIComponent(identifier)}`;
@@ -210,6 +219,47 @@ const sessionsService = {
     } catch {
       return MOCK_SESSIONS.find((session) => session.id === id || session.code === id) ?? null;
     }
+  },
+
+  async createSession(payload) {
+    const response = await fetch(`${API_BASE_URL}/session-administration/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
+
+    if (!response.ok) {
+      throw new Error(data?.message || `Failed to create session (${response.status}).`);
+    }
+
+    const session = data?.session;
+    if (!session) {
+      throw new Error("Backend did not return created session payload.");
+    }
+
+    const createdAt = new Date(session.createdAt || Date.now());
+    const cardSession = {
+      id: String(session.sessionCode || session.sessionId),
+      code: String(session.sessionCode || session.sessionId),
+      date: createdAt.toISOString().slice(0, 10),
+      time: createdAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }),
+      status: mapBackendStatusToCardStatus(session.status),
+      players: 0,
+      capacity: Number(session.maxPlayers ?? payload.maxPlayers ?? 0),
+      pool: "TBD",
+      note: "Created now",
+      sessionId: session.sessionId,
+    };
+
+    MOCK_SESSIONS.unshift(cardSession);
+    return { created: session, cardSession };
   },
 };
 
@@ -980,13 +1030,83 @@ export default function SessionsPage({ isDark }) {
     search: "", status: "all", month: null, sort: "nearest",
   });
   const [page, setPage] = useState(1);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
+  const [createForm, setCreateForm] = useState({
+    managerId: "",
+    sessionCode: "",
+    minPlayers: "1",
+    maxPlayers: "7",
+  });
 
   const { sessions, liveSession, loading, error, total, refetch } = useSessions(filters);
 
-  const handleFiltersChange = useCallback((nextFilters) => {
-    setFilters(nextFilters);
-    setPage(1);
-  }, []);
+  const handleOpenCreate = () => {
+    setCreateError("");
+    setShowCreateModal(true);
+  };
+
+  const handleCreateSession = async () => {
+    const createdByManagerId = Number(createForm.managerId);
+    const minPlayers = Number(createForm.minPlayers);
+    const maxPlayers = Number(createForm.maxPlayers);
+    const sessionCode = createForm.sessionCode.trim();
+
+    if (!Number.isInteger(createdByManagerId) || createdByManagerId <= 0) {
+      setCreateError("Manager ID must be a positive integer.");
+      return;
+    }
+    if (!sessionCode) {
+      setCreateError("Session code is required.");
+      return;
+    }
+    if (!Number.isInteger(minPlayers) || minPlayers <= 0) {
+      setCreateError("Min players must be a positive integer.");
+      return;
+    }
+    if (!Number.isInteger(maxPlayers) || maxPlayers <= 0 || maxPlayers > 7) {
+      setCreateError("Max players must be an integer between 1 and 7.");
+      return;
+    }
+    if (minPlayers > maxPlayers) {
+      setCreateError("Min players cannot exceed max players.");
+      return;
+    }
+
+    setCreating(true);
+    setCreateError("");
+
+    try {
+      const { created } = await sessionsService.createSession({
+        createdByManagerId,
+        sessionCode,
+        minPlayers,
+        maxPlayers,
+      });
+
+      await refetch();
+      setShowCreateModal(false);
+      setCreateForm({
+        managerId: "",
+        sessionCode: "",
+        minPlayers: "1",
+        maxPlayers: "7",
+      });
+
+      const identifier = created?.sessionCode || created?.sessionId;
+      if (identifier) {
+        window.location.href = `/sessions/${encodeURIComponent(String(identifier))}`;
+      }
+    } catch (err) {
+      setCreateError(err?.message || "Failed to create session.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  // Reset page on filter change
+  useEffect(() => { setPage(1); }, [JSON.stringify(filters)]);
 
   const paginated = useMemo(() => sessions.slice(0, page * PAGE_SIZE), [sessions, page]);
   const hasMore = paginated.length < sessions.length;
@@ -1098,12 +1218,41 @@ export default function SessionsPage({ isDark }) {
           {/* ── RESULTS COUNT ── */}
           {!loading && !error && (
             <div style={{
-              fontFamily: "Cinzel, serif", fontSize: 8, letterSpacing: "0.18em",
-              color: "rgba(164,208,148,0.3)", marginBottom: 20,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              marginBottom: 20,
+              flexWrap: "wrap",
             }}>
-              {sessions.length > 0
-                ? `SHOWING ${paginated.length} OF ${total} SESSION${total !== 1 ? "S" : ""}`
-                : "NO RESULTS"}
+              <div style={{
+                fontFamily: "Cinzel, serif", fontSize: 8, letterSpacing: "0.18em",
+                color: "rgba(164,208,148,0.3)",
+              }}>
+                {sessions.length > 0
+                  ? `SHOWING ${paginated.length} OF ${total} SESSION${total !== 1 ? "S" : ""}`
+                  : "NO RESULTS"}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOpenCreate}
+                style={{
+                  fontFamily: "Cinzel, serif",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  padding: "10px 16px",
+                  borderRadius: 4,
+                  border: "1px solid rgba(164,48,63,0.45)",
+                  background: "rgba(164,48,63,0.18)",
+                  color: "#F2D0A4",
+                  cursor: "pointer",
+                }}
+              >
+                + Create Session
+              </button>
             </div>
           )}
 
@@ -1166,6 +1315,152 @@ export default function SessionsPage({ isDark }) {
             </div>
           )}
         </main>
+
+        {showCreateModal && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(8, 5, 4, 0.72)",
+            display: "grid",
+            placeItems: "center",
+            padding: 16,
+            zIndex: 1000,
+          }}>
+            <div style={{
+              width: "min(560px, 100%)",
+              background: "#18110d",
+              border: "1px solid rgba(164,48,63,0.35)",
+              borderRadius: 8,
+              padding: 20,
+              boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <h3 style={{
+                  margin: 0,
+                  fontFamily: "Cinzel, serif",
+                  fontSize: 18,
+                  color: "#F2D0A4",
+                  letterSpacing: "0.06em",
+                }}>
+                  Create Session
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "rgba(242,208,164,0.8)",
+                    fontSize: 18,
+                    cursor: "pointer",
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p style={{ margin: "0 0 16px", color: "rgba(212,196,168,0.72)", fontSize: 13 }}>
+                Fill the required details. After creation, you will be redirected to the new session page.
+              </p>
+
+              <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+                {[
+                  { key: "managerId", label: "Manager ID", type: "number", min: 1, placeholder: "e.g. 1" },
+                  { key: "sessionCode", label: "Session Code", type: "text", placeholder: "e.g. SESSION-27" },
+                  { key: "minPlayers", label: "Min Players", type: "number", min: 1, max: 7 },
+                  { key: "maxPlayers", label: "Max Players", type: "number", min: 1, max: 7 },
+                ].map((field) => (
+                  <label key={field.key} style={{ display: "grid", gap: 6 }}>
+                    <span style={{
+                      fontFamily: "Cinzel, serif",
+                      fontSize: 10,
+                      letterSpacing: "0.14em",
+                      color: "rgba(164,208,148,0.5)",
+                      textTransform: "uppercase",
+                    }}>
+                      {field.label}
+                    </span>
+                    <input
+                      type={field.type}
+                      min={field.min}
+                      max={field.max}
+                      placeholder={field.placeholder}
+                      value={createForm[field.key]}
+                      onChange={(event) => {
+                        setCreateError("");
+                        setCreateForm((prev) => ({ ...prev, [field.key]: event.target.value }));
+                      }}
+                      style={{
+                        minHeight: 40,
+                        borderRadius: 4,
+                        border: "1px solid rgba(93,80,60,0.42)",
+                        background: "rgba(0,0,0,0.24)",
+                        color: "#D4C4A8",
+                        padding: "0 10px",
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+
+              {createError ? (
+                <div style={{
+                  marginTop: 14,
+                  padding: "10px 12px",
+                  borderRadius: 4,
+                  border: "1px solid rgba(164,48,63,0.45)",
+                  color: "#ffb3bf",
+                  background: "rgba(164,48,63,0.18)",
+                  fontSize: 13,
+                }}>
+                  {createError}
+                </div>
+              ) : null}
+
+              <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  disabled={creating}
+                  style={{
+                    fontFamily: "Cinzel, serif",
+                    fontSize: 10,
+                    letterSpacing: "0.12em",
+                    padding: "10px 14px",
+                    borderRadius: 4,
+                    border: "1px solid rgba(93,80,60,0.35)",
+                    background: "rgba(93,80,60,0.16)",
+                    color: "#D4C4A8",
+                    cursor: creating ? "not-allowed" : "pointer",
+                    opacity: creating ? 0.6 : 1,
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateSession}
+                  disabled={creating}
+                  style={{
+                    fontFamily: "Cinzel, serif",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: "0.12em",
+                    padding: "10px 16px",
+                    borderRadius: 4,
+                    border: "1px solid rgba(164,48,63,0.5)",
+                    background: "rgba(164,48,63,0.24)",
+                    color: "#F2D0A4",
+                    cursor: creating ? "not-allowed" : "pointer",
+                    opacity: creating ? 0.6 : 1,
+                  }}
+                >
+                  {creating ? "Creating..." : "Create Session"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         </div>
       </div>
     </>
