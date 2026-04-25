@@ -13,6 +13,10 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: Number(process.env.PORT ?? 4000),
   apiPrefix: process.env.API_PREFIX ?? "/api",
+  auth: {
+    tokenSecret: process.env.AUTH_TOKEN_SECRET ?? "shutterisland-dev-secret",
+    tokenTtlSeconds: Number(process.env.AUTH_TOKEN_TTL_SECONDS ?? 8 * 60 * 60)
+  },
   db: {
     host: process.env.DB_HOST ?? "127.0.0.1",
     port: Number(process.env.DB_PORT ?? 3306),
