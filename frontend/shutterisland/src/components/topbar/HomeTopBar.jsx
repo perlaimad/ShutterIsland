@@ -35,7 +35,7 @@ function HomeTopBar({ tickerItems, isDark, onToggleTheme }) {
             </span>
             <span className={styles.themeToggleText}>{isDark ? "Dark" : "Light"}</span>
           </button>
-          <button type="button" className={styles.navCta}>Enter Arena</button>
+          <a href="/login" className={styles.navCta}>Enter Arena</a>
         </div>
       </nav>
     </div>
