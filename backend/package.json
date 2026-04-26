@@ -7,13 +7,15 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "check": "node --check src/server.js && node --check src/app.js && node --check src/config/env.js && node --check src/config/db.js && node --check src/routes/api.routes.js && node --check src/routes/health.routes.js && node --check src/scripts/db-test.js && node --check src/modules/GameManagement/game.routes.js && node --check src/modules/GameManagement/game.service.js && node --check src/modules/SessionAdminstration/session.routes.js && node --check src/modules/LiveStreamingPaymentBetting/live.routes.js && node --check src/modules/MonitoringReporting/monitoring.routes.js",
+    "test": "node --test src/modules/AuthenticationAccessControl/auth.test.js",
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/config/env.js && node --check src/config/db.js && node --check src/routes/api.routes.js && node --check src/routes/health.routes.js && node --check src/scripts/db-test.js && node --check src/modules/AuthenticationAccessControl/access-control.js && node --check src/modules/AuthenticationAccessControl/auth.validation.js && node --check src/modules/AuthenticationAccessControl/auth.tokens.js && node --check src/modules/AuthenticationAccessControl/auth.service.js && node --check src/modules/AuthenticationAccessControl/viewer.service.js && node --check src/modules/AuthenticationAccessControl/auth.middleware.js && node --check src/modules/AuthenticationAccessControl/auth.routes.js && node --check src/modules/GameManagement/game.routes.js && node --check src/modules/GameManagement/game.service.js && node --check src/modules/SessionAdminstration/session.routes.js && node --check src/modules/LiveStreamingPaymentBetting/live.routes.js && node --check src/modules/MonitoringReporting/monitoring.routes.js",
     "db:test": "node src/scripts/db-test.js"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
