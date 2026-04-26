@@ -4,6 +4,9 @@ import { publishAdminEvent, subscribeAdminStream } from "../../common/realtime/s
 
 export const monitoringReportingRouter = Router();
 
+const isMissingSchedulingColumnError = (error) =>
+  error?.code === "ER_BAD_FIELD_ERROR" || String(error?.message || "").toLowerCase().includes("unknown column");
+
 const asPositiveInteger = (value) => {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
@@ -271,44 +274,101 @@ monitoringReportingRouter.get("/admin/dashboard/overview", async (req, res) => {
 // GET active sessions
 monitoringReportingRouter.get("/admin/dashboard/sessions", async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT
-        gs.session_id,
-        gs.session_code,
-        gs.status,
-        r.name AS room,
-        r.difficulty_level,
-        COUNT(DISTINCT sp.player_id) AS participants
-      FROM game_session gs
-      LEFT JOIN (
-        SELECT sr1.*
-        FROM session_room sr1
-        INNER JOIN (
-          SELECT session_id, MAX(room_index) AS max_room_index
-          FROM session_room
-          GROUP BY session_id
-        ) sr2
-          ON sr1.session_id = sr2.session_id
-         AND sr1.room_index = sr2.max_room_index
-      ) latest_sr
-        ON gs.session_id = latest_sr.session_id
-      LEFT JOIN room r
-        ON latest_sr.room_id = r.room_id
-      LEFT JOIN session_player sp
-        ON gs.session_id = sp.session_id
-      GROUP BY
-        gs.session_id,
-        gs.session_code,
-        gs.status,
-        r.name,
-        r.difficulty_level
-      ORDER BY gs.session_id ASC
-    `);
+    let rows;
+
+    try {
+      [rows] = await pool.query(`
+        SELECT
+          gs.session_id,
+          gs.session_code,
+          gs.scheduled_at,
+          gs.visibility,
+          gs.operator_name,
+          gs.manager_name,
+          gs.manager_notes,
+          gs.status,
+          r.name AS room,
+          r.difficulty_level,
+          COUNT(DISTINCT sp.player_id) AS participants
+        FROM game_session gs
+        LEFT JOIN (
+          SELECT sr1.*
+          FROM session_room sr1
+          INNER JOIN (
+            SELECT session_id, MAX(room_index) AS max_room_index
+            FROM session_room
+            GROUP BY session_id
+          ) sr2
+            ON sr1.session_id = sr2.session_id
+           AND sr1.room_index = sr2.max_room_index
+        ) latest_sr
+          ON gs.session_id = latest_sr.session_id
+        LEFT JOIN room r
+          ON latest_sr.room_id = r.room_id
+        LEFT JOIN session_player sp
+          ON gs.session_id = sp.session_id
+        GROUP BY
+          gs.session_id,
+          gs.session_code,
+          gs.scheduled_at,
+          gs.visibility,
+          gs.operator_name,
+          gs.manager_name,
+          gs.manager_notes,
+          gs.status,
+          r.name,
+          r.difficulty_level
+        ORDER BY gs.session_id ASC
+      `);
+    } catch (error) {
+      if (!isMissingSchedulingColumnError(error)) {
+        throw error;
+      }
+
+      [rows] = await pool.query(`
+        SELECT
+          gs.session_id,
+          gs.session_code,
+          gs.status,
+          r.name AS room,
+          r.difficulty_level,
+          COUNT(DISTINCT sp.player_id) AS participants
+        FROM game_session gs
+        LEFT JOIN (
+          SELECT sr1.*
+          FROM session_room sr1
+          INNER JOIN (
+            SELECT session_id, MAX(room_index) AS max_room_index
+            FROM session_room
+            GROUP BY session_id
+          ) sr2
+            ON sr1.session_id = sr2.session_id
+           AND sr1.room_index = sr2.max_room_index
+        ) latest_sr
+          ON gs.session_id = latest_sr.session_id
+        LEFT JOIN room r
+          ON latest_sr.room_id = r.room_id
+        LEFT JOIN session_player sp
+          ON gs.session_id = sp.session_id
+        GROUP BY
+          gs.session_id,
+          gs.session_code,
+          gs.status,
+          r.name,
+          r.difficulty_level
+        ORDER BY gs.session_id ASC
+      `);
+    }
 
     res.json(
       rows.map((row) => ({
         id: row.session_code,
         sessionId: row.session_id,
+        scheduledAt: toIsoString(row.scheduled_at),
+        visibility: row.visibility || null,
+        operatorName: row.operator_name || null,
+        managerName: row.manager_name || null,
+        notes: row.manager_notes || null,
         room: row.room || null,
         level: row.difficulty_level !== null ? `Level ${row.difficulty_level}` : null,
         participants: Number(row.participants),
@@ -366,35 +426,83 @@ monitoringReportingRouter.get("/admin/dashboard/participants", async (req, res) 
 
 monitoringReportingRouter.get("/admin/reports/session-performance", async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT
-        gs.session_id,
-        gs.session_code,
-        gs.status,
-        gs.created_at,
-        gs.started_at,
-        gs.ended_at,
-        COUNT(DISTINCT sp.player_id) AS total_players,
-        SUM(CASE WHEN sp.is_alive = 1 THEN 1 ELSE 0 END) AS alive_players,
-        SUM(CASE WHEN sp.is_alive = 0 THEN 1 ELSE 0 END) AS eliminated_players,
-        MIN(sp.final_rank) AS winning_rank
-      FROM game_session gs
-      LEFT JOIN session_player sp
-        ON gs.session_id = sp.session_id
-      GROUP BY
-        gs.session_id,
-        gs.session_code,
-        gs.status,
-        gs.created_at,
-        gs.started_at,
-        gs.ended_at
-      ORDER BY gs.session_id ASC
-    `);
+    let rows;
+
+    try {
+      [rows] = await pool.query(`
+        SELECT
+          gs.session_id,
+          gs.session_code,
+          gs.scheduled_at,
+          gs.visibility,
+          gs.operator_name,
+          gs.manager_name,
+          gs.manager_notes,
+          gs.status,
+          gs.created_at,
+          gs.started_at,
+          gs.ended_at,
+          COUNT(DISTINCT sp.player_id) AS total_players,
+          SUM(CASE WHEN sp.is_alive = 1 THEN 1 ELSE 0 END) AS alive_players,
+          SUM(CASE WHEN sp.is_alive = 0 THEN 1 ELSE 0 END) AS eliminated_players,
+          MIN(sp.final_rank) AS winning_rank
+        FROM game_session gs
+        LEFT JOIN session_player sp
+          ON gs.session_id = sp.session_id
+        GROUP BY
+          gs.session_id,
+          gs.session_code,
+          gs.scheduled_at,
+          gs.visibility,
+          gs.operator_name,
+          gs.manager_name,
+          gs.manager_notes,
+          gs.status,
+          gs.created_at,
+          gs.started_at,
+          gs.ended_at
+        ORDER BY gs.session_id ASC
+      `);
+    } catch (error) {
+      if (!isMissingSchedulingColumnError(error)) {
+        throw error;
+      }
+
+      [rows] = await pool.query(`
+        SELECT
+          gs.session_id,
+          gs.session_code,
+          gs.status,
+          gs.created_at,
+          gs.started_at,
+          gs.ended_at,
+          COUNT(DISTINCT sp.player_id) AS total_players,
+          SUM(CASE WHEN sp.is_alive = 1 THEN 1 ELSE 0 END) AS alive_players,
+          SUM(CASE WHEN sp.is_alive = 0 THEN 1 ELSE 0 END) AS eliminated_players,
+          MIN(sp.final_rank) AS winning_rank
+        FROM game_session gs
+        LEFT JOIN session_player sp
+          ON gs.session_id = sp.session_id
+        GROUP BY
+          gs.session_id,
+          gs.session_code,
+          gs.status,
+          gs.created_at,
+          gs.started_at,
+          gs.ended_at
+        ORDER BY gs.session_id ASC
+      `);
+    }
 
     res.json(
       rows.map((row) => ({
         sessionId: row.session_id,
         sessionCode: row.session_code,
+        scheduledAt: row.scheduled_at,
+        visibility: row.visibility || null,
+        operatorName: row.operator_name || null,
+        managerName: row.manager_name || null,
+        notes: row.manager_notes || null,
         status: row.status,
         createdAt: row.created_at,
         startedAt: row.started_at,

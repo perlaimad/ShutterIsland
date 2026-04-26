@@ -1,14 +1,6 @@
-import { useAuth } from "../../context/AuthContext";
 import styles from "./HomeTopBar.module.css";
 
 function HomeTopBar({ tickerItems, isDark, onToggleTheme }) {
-  const { isAuthenticated, staff, logout } = useAuth();
-
-  const handleLogout = () => {
-    logout();
-    window.location.href = "/login";
-  };
-
   return (
     <div className={styles.topBar}>
       <div className={styles.ticker}>
@@ -26,10 +18,9 @@ function HomeTopBar({ tickerItems, isDark, onToggleTheme }) {
         <a href="/" className={styles.navBrand}>Atlas Group</a>
         <div className={styles.navLinks}>
           <a href="/sessions" className={styles.navLink}>Sessions</a>
-          <button type="button" className={styles.navLink}>Book Session</button>
-          <button type="button" className={styles.navLink}>Bet</button>
-          <button type="button" className={styles.navLink}>Watch</button>
-          
+          <a href="/book" className={styles.navLink}>Schedule Session</a>
+          <a href="/watch/7" className={styles.navLink}>Watch</a>
+          <a href="/bet/7" className={styles.navLink}>Bet</a>
           <button
             type="button"
             className={`${styles.themeToggle} ${isDark ? styles.themeToggleOn : ""}`}
@@ -43,14 +34,7 @@ function HomeTopBar({ tickerItems, isDark, onToggleTheme }) {
             </span>
             <span className={styles.themeToggleText}>{isDark ? "Dark" : "Light"}</span>
           </button>
-          {isAuthenticated ? (
-            <>
-              <a href="/dashboard" className={styles.navLink}>{staff?.username ?? "Dashboard"}</a>
-              <button type="button" className={styles.navCta} onClick={handleLogout}>Logout</button>
-            </>
-          ) : (
-            <a href="/login" className={styles.navCta}>Enter Arena</a>
-          )}
+          <a href="/login" className={styles.navCta}>Enter Arena</a>
         </div>
       </nav>
     </div>

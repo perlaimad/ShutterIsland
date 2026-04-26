@@ -1,13 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import styles from "./BookSessionPage.module.css";
 
 const API_BASE = import.meta.env?.VITE_API_URL ?? "http://localhost:4000";
+const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL ?? `${API_BASE}/api`;
 const REFRESH_INTERVAL_MS = 10000;
-
-function getSessionIdFromPath() {
-  const match = window.location.pathname.match(/\/book\/([^/]+)/i);
-  return match ? decodeURIComponent(match[1]) : null;
-}
 
 async function apiFetch(path, fallback = null) {
   try {
@@ -22,95 +19,17 @@ async function apiFetch(path, fallback = null) {
   }
 }
 
-function formatDateTime(value) {
-  if (!value) return "TBD";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString([], {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function normalizeStatus(status) {
-  return String(status || "Unknown").trim();
-}
-
-function statusTone(status) {
-  const normalized = normalizeStatus(status).toLowerCase();
-  if (["open", "booking open", "lobby"].includes(normalized)) return "open";
-  if (["upcoming", "scheduled"].includes(normalized)) return "upcoming";
-  if (["active", "live", "running"].includes(normalized)) return "active";
-  if (["finished", "completed"].includes(normalized)) return "finished";
-  if (["paused"].includes(normalized)) return "paused";
-  if (["cancelled"].includes(normalized)) return "cancelled";
-  return "waiting";
-}
-
-function romanize(value) {
-  const num = Number(value);
-  if (!Number.isInteger(num) || num <= 0) return String(value ?? "");
-
-  const numerals = [
-    [1000, "M"],
-    [900, "CM"],
-    [500, "D"],
-    [400, "CD"],
-    [100, "C"],
-    [90, "XC"],
-    [50, "L"],
-    [40, "XL"],
-    [10, "X"],
-    [9, "IX"],
-    [5, "V"],
-    [4, "IV"],
-    [1, "I"],
-  ];
-
-  let remaining = num;
-  let output = "";
-  numerals.forEach(([amount, symbol]) => {
-    while (remaining >= amount) {
-      output += symbol;
-      remaining -= amount;
-    }
-  });
-  return output;
-}
-
-function StatusBadge({ status }) {
-  return (
-    <span className={`${styles.statusBadge} ${styles[statusTone(status)]}`}>
-      {normalizeStatus(status)}
-    </span>
-  );
-}
-
-function SummaryCard({ label, value, hint }) {
-  return (
-    <article className={styles.summaryCard}>
-      <div className={styles.summaryLabel}>{label}</div>
-      <div className={styles.summaryValue}>{value}</div>
-      {hint ? <div className={styles.summaryHint}>{hint}</div> : null}
-    </article>
-  );
-}
-
 export default function BookSessionPage() {
-  const requestedSessionId = getSessionIdFromPath();
+  const { authFetch, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [sessions, setSessions] = useState([]);
-  const [sessionPerformance, setSessionPerformance] = useState([]);
-  const [selectedSessionId, setSelectedSessionId] = useState(requestedSessionId);
+  const [submitting, setSubmitting] = useState(false);
   const [formState, setFormState] = useState({
+    sessionCode: "",
     managerName: "",
     sessionDate: "",
     startTime: "",
-    capacity: "8",
+    capacity: "7",
     visibility: "Public Watch Listing",
     operatorName: "",
     notes: "",
@@ -121,82 +40,16 @@ export default function BookSessionPage() {
     setLoading(true);
     setError("");
 
-    const [sessionsRes, performanceRes] = await Promise.all([
-      apiFetch("/api/admin/dashboard/sessions", []),
-      apiFetch("/api/admin/reports/session-performance", []),
-    ]);
+    await apiFetch("/api/admin/dashboard/sessions", []);
 
-    if (!Array.isArray(sessionsRes) || sessionsRes.length === 0) {
-      setError("No sessions were returned from the backend.");
-      setLoading(false);
-      return;
-    }
-
-    setSessions(sessionsRes);
-    setSessionPerformance(Array.isArray(performanceRes) ? performanceRes : []);
-
-    const requestedMatch = sessionsRes.find(
-      (session) => String(session.sessionId) === String(requestedSessionId || ""),
-    );
-
-    const preferredSession =
-      requestedMatch ||
-      sessionsRes.find((session) => {
-        const tone = statusTone(session.status);
-        return tone === "upcoming" || tone === "open";
-      }) ||
-      sessionsRes[0];
-
-    setSelectedSessionId(String(preferredSession.sessionId));
     setLoading(false);
-  }, [requestedSessionId]);
+  }, []);
 
   useEffect(() => {
     loadPage();
     const intervalId = window.setInterval(loadPage, REFRESH_INTERVAL_MS);
     return () => window.clearInterval(intervalId);
   }, [loadPage]);
-
-  useEffect(() => {
-    if (!selectedSessionId) return;
-    window.history.replaceState({}, "", `/book/${encodeURIComponent(selectedSessionId)}`);
-  }, [selectedSessionId]);
-
-  const selectedSession = useMemo(
-    () =>
-      sessions.find((session) => String(session.sessionId) === String(selectedSessionId || "")) ?? null,
-    [sessions, selectedSessionId],
-  );
-
-  const selectedPerformance = useMemo(
-    () =>
-      sessionPerformance.find((entry) => String(entry.sessionId) === String(selectedSessionId || "")) ?? null,
-    [sessionPerformance, selectedSessionId],
-  );
-
-  const selectedSessionCode = useMemo(
-    () => romanize(selectedSession?.sessionId ?? selectedSessionId ?? ""),
-    [selectedSession?.sessionId, selectedSessionId],
-  );
-
-  const registeredParticipants = Number(
-    selectedPerformance?.totalPlayers ??
-    selectedSession?.totalPlayers ??
-    selectedSession?.currentPlayers ??
-    0,
-  );
-
-  const scheduledCount = sessions.filter((session) => {
-    const tone = statusTone(session.status);
-    return tone === "upcoming" || tone === "open";
-  }).length;
-
-  const liveCount = sessions.filter((session) => statusTone(session.status) === "active").length;
-
-  const visibleToViewersCount = sessions.filter((session) => {
-    const tone = statusTone(session.status);
-    return tone === "upcoming" || tone === "open" || tone === "active";
-  }).length;
 
   function handleFormChange(event) {
     const { name, value } = event.target;
@@ -207,38 +60,69 @@ export default function BookSessionPage() {
   function handleSubmit(event) {
     event.preventDefault();
 
-    /*
-      TODO: Missing backend API - create or schedule a new session
-      Endpoint needed : POST /api/session-administration/sessions
-      Method          : POST
-      Expected body   : {
-                          scheduledDate: string,
-                          scheduledTime: string,
-                          capacity: number,
-                          visibility: "Public Watch Listing" | "Private Preview",
-                          managerName: string,
-                          operatorName?: string,
-                          notes?: string,
-                          basedOnSessionId?: number
-                        }
-      Expected shape  : {
-                          sessionId: number,
-                          status: "Lobby" | "Upcoming",
-                          message: string,
-                          session: {
-                            sessionId: number,
-                            createdAt: string,
-                            status: string,
-                            capacity: number
-                          }
-                        }
-      Used in         : handleSubmit in BookSessionPage.jsx
-      Module          : backend/src/modules/SessionAdminstration/session.routes.js
-    */
+    const sessionCode = formState.sessionCode.trim();
+    const maxPlayers = Number(formState.capacity);
 
-    setSubmitMessage(
-      "Scheduling UI is ready. Add the backend create-session endpoint so new sessions appear in Sessions immediately and become watchable once they go live.",
-    );
+    if (!isAuthenticated) {
+      window.location.href = `/login?redirect=${encodeURIComponent("/book")}`;
+      return;
+    }
+
+    if (!sessionCode) {
+      setSubmitMessage("Session code is required.");
+      return;
+    }
+
+    if (!Number.isInteger(maxPlayers) || maxPlayers <= 0 || maxPlayers > 7) {
+      setSubmitMessage("Capacity must be a whole number between 1 and 7.");
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitMessage("");
+
+    authFetch(`${API_BASE_URL}/session-administration/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionCode,
+        managerName: formState.managerName.trim(),
+        scheduledDate: formState.sessionDate,
+        scheduledTime: formState.startTime,
+        minPlayers: 1,
+        maxPlayers,
+        visibility: formState.visibility,
+        operatorName: formState.operatorName.trim(),
+        notes: formState.notes.trim(),
+      }),
+    })
+      .then(async (response) => {
+        let data = {};
+        try {
+          data = await response.json();
+        } catch {
+          data = {};
+        }
+
+        if (!response.ok) {
+          throw new Error(data?.message || `Failed to create session (${response.status}).`);
+        }
+
+        const created = data?.session;
+        const identifier = created?.sessionCode || created?.sessionId;
+
+        setSubmitMessage("Session created successfully.");
+
+        if (identifier) {
+          window.location.href = `/sessions/${encodeURIComponent(String(identifier))}`;
+        }
+      })
+      .catch((submitError) => {
+        setSubmitMessage(submitError?.message || "Failed to create session.");
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
   }
 
   return (
@@ -276,6 +160,18 @@ export default function BookSessionPage() {
                 </div>
 
                 <form className={styles.form} onSubmit={handleSubmit}>
+                  <label className={styles.field}>
+                    <span className={styles.fieldLabel}>Session Code</span>
+                    <input
+                      className={styles.input}
+                      name="sessionCode"
+                      value={formState.sessionCode}
+                      onChange={handleFormChange}
+                      placeholder="Enter a unique session code"
+                      required
+                    />
+                  </label>
+
                   <label className={styles.field}>
                     <span className={styles.fieldLabel}>Manager Name</span>
                     <input
@@ -323,7 +219,7 @@ export default function BookSessionPage() {
                         value={formState.capacity}
                         onChange={handleFormChange}
                       >
-                        {["4", "6", "8", "10", "12"].map((value) => (
+                        {["4", "5", "6", "7"].map((value) => (
                           <option key={value} value={value}>{value} participants</option>
                         ))}
                       </select>
@@ -369,11 +265,8 @@ export default function BookSessionPage() {
                   </label>
 
                   <div className={styles.formFoot}>
-                    <div className={styles.formHint}>
-                      Once the backend create-session API is connected, new sessions from this form should appear in `Sessions` immediately and become watchable when they transition live.
-                    </div>
-                    <button type="submit" className={styles.primaryButton}>
-                      Create Session
+                    <button type="submit" className={styles.primaryButton} disabled={submitting}>
+                      {submitting ? "Creating..." : "Create Session"}
                     </button>
                   </div>
 

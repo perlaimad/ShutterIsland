@@ -320,7 +320,7 @@ function HomePage() {
               </div>
             </div>
 
-            <button type="button" className={styles.btnArena}>Book a Session</button>
+            <a href="/book" className={styles.btnArena}>Book a Session</a>
             <div className={styles.spacer} />
             <button type="button" className={styles.btnPlayers} onClick={() => setOverlayOpen(true)}>
               Meet the Players

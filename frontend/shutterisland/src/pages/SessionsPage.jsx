@@ -13,26 +13,15 @@
  * -----------------------------------------------
  */
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 
 /* ============================================================
    1. CONFIGURATION
    ============================================================ */
-const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL
-  ?? `${import.meta?.env?.VITE_API_URL ?? "http://localhost:4000"}/api`;
-
-function mapBackendStatusToCardStatus(status) {
-  const normalized = String(status || "").trim().toLowerCase();
-  if (normalized === "active") return "live";
-  if (normalized === "paused") return "closed";
-  if (normalized === "finished") return "finished";
-  if (normalized === "cancelled") return "cancelled";
-  return "upcoming";
-}
+const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL ?? "/api";
 
 function getSessionHref(session) {
-  const identifier = session?.id ?? session?.code ?? "";
+  const identifier = session?.code ?? session?.sessionCode ?? session?.id ?? "";
   return `/sessions/${encodeURIComponent(identifier)}`;
 }
 
@@ -41,95 +30,115 @@ function getSessionHref(session) {
    ============================================================ */
 const MOCK_SESSIONS = [
   {
-    id: "1", code: "I", date: "2026-03-06", time: "19:00",
+    id: "SI-001", code: "I", date: "2026-03-06", time: "19:00",
     status: "finished", players: 8, capacity: 8, pool: "$41,200",
     note: "Concluded", winner: "Tariq Nasr", duration: "2h 18m",
   },
   {
-    id: "2", code: "II", date: "2026-03-13", time: "19:00",
+    id: "SI-002", code: "II", date: "2026-03-13", time: "19:00",
     status: "finished", players: 8, capacity: 8, pool: "$38,750",
     note: "Concluded", winner: "Sera Mikkelsen", duration: "1h 54m",
   },
   {
-    id: "3", code: "III", date: "2026-03-20", time: "20:00",
+    id: "SI-003", code: "III", date: "2026-03-20", time: "20:00",
     status: "finished", players: 8, capacity: 8, pool: "$45,100",
     note: "Concluded", winner: "Dario Vale", duration: "2h 06m",
   },
   {
-    id: "4", code: "IV", date: "2026-03-27", time: "19:30",
+    id: "SI-004", code: "IV", date: "2026-03-27", time: "19:30",
     status: "finished", players: 8, capacity: 8, pool: "$52,000",
     note: "Concluded", winner: "Tariq Nasr", duration: "2h 41m",
   },
   {
-    id: "5", code: "V", date: "2026-04-03", time: "19:00",
+    id: "SI-005", code: "V", date: "2026-04-03", time: "19:00",
     status: "finished", players: 8, capacity: 8, pool: "$49,800",
     note: "Concluded", winner: "Yara Cross", duration: "2h 03m",
   },
   {
-    id: "6", code: "VI", date: "2026-04-06", time: "20:00",
+    id: "SI-006", code: "VI", date: "2026-04-06", time: "20:00",
     status: "finished", players: 8, capacity: 8, pool: "$61,300",
     note: "Concluded", winner: "Felix Osei", duration: "1h 47m",
   },
   {
-    id: "7", code: "VII", date: "2026-04-11", time: "20:00",
+    id: "SI-007", code: "VII", date: "2026-04-11", time: "20:00",
     status: "live", players: 5, capacity: 8, pool: "$104,402",
     note: "Live Now", round: 3, timeLeft: "00:04:17",
   },
   {
-    id: "8", code: "VIII", date: "2026-04-17", time: "19:00",
+    id: "SI-008", code: "VIII", date: "2026-04-17", time: "19:00",
     status: "open", players: 6, capacity: 8, pool: "TBD",
     note: "Booking Open", spotsLeft: 2,
   },
   {
-    id: "9", code: "IX", date: "2026-04-22", time: "20:00",
+    id: "SI-009", code: "IX", date: "2026-04-22", time: "20:00",
     status: "upcoming", players: 0, capacity: 8, pool: "TBD",
     note: "Opens Soon",
   },
   {
-    id: "10", code: "X", date: "2026-04-28", time: "19:30",
+    id: "SI-010", code: "X", date: "2026-04-28", time: "19:30",
     status: "upcoming", players: 0, capacity: 8, pool: "TBD",
     note: "Opens Soon",
   },
   {
-    id: "11", code: "XI", date: "2026-05-05", time: "19:00",
+    id: "SI-011", code: "XI", date: "2026-05-05", time: "19:00",
     status: "upcoming", players: 0, capacity: 8, pool: "TBD",
     note: "Opens Soon",
   },
   {
-    id: "12", code: "XII", date: "2026-05-12", time: "20:00",
+    id: "SI-012", code: "XII", date: "2026-05-12", time: "20:00",
     status: "upcoming", players: 0, capacity: 8, pool: "TBD",
     note: "Opens Soon",
   },
 ];
 
+function mapBackendStatusToCardStatus(status) {
+  const normalized = String(status || "").trim().toLowerCase();
+  if (normalized === "active") return "live";
+  if (normalized === "paused") return "closed";
+  if (normalized === "finished") return "finished";
+  if (normalized === "cancelled") return "cancelled";
+  if (normalized === "lobby") return "open";
+  return "upcoming";
+}
+
 function normalizeSession(session) {
+  const displayStart = session.date
+    ? null
+    : (session.scheduledAt ?? session.startsAt ?? session.createdAt ?? null);
+  const normalizedStatus = mapBackendStatusToCardStatus(session.status);
+  const capacity = Number(session.capacity ?? session.maxPlayers ?? 0);
+  const players = Number(session.players ?? session.playerCount ?? session.participants ?? 0);
+
   return {
     id: session.id ?? String(session.sessionId ?? session.session_id ?? ""),
     code: session.code ?? session.romanId ?? session.sessionCode ?? session.id ?? "",
-    date: session.date ?? (session.startsAt ? String(session.startsAt).slice(0, 10) : ""),
-    time: session.time ?? (session.startsAt ? new Date(session.startsAt).toISOString().slice(11, 16) : ""),
-    status: session.status ?? "upcoming",
-    players: Number(session.players ?? session.playerCount ?? 0),
-    capacity: Number(session.capacity ?? session.maxPlayers ?? 0),
+    date: session.date ?? (displayStart ? String(displayStart).slice(0, 10) : ""),
+    time: session.time ?? (displayStart ? new Date(displayStart).toISOString().slice(11, 16) : ""),
+    status: session.date ? (session.status ?? "upcoming") : normalizedStatus,
+    players,
+    capacity,
     note: session.note
-      ?? (session.statusLabel
-        ? session.statusLabel
-        : session.status === "live"
-          ? "Live Now"
-          : session.status === "open"
-            ? "Booking Open"
-            : session.status === "finished"
-              ? "Concluded"
-              : "Opens Soon"),
+      ?? (normalizedStatus === "live"
+        ? "Live Now"
+        : normalizedStatus === "open"
+          ? "Booking Open"
+          : normalizedStatus === "finished"
+            ? "Concluded"
+            : "Opens Soon"),
     winner: session.winner ?? null,
     duration: session.duration ?? null,
     pool: session.pool ?? "TBD",
     timeLeft: session.timeLeft ?? null,
     round: session.round ?? null,
-    spotsLeft: session.spotsLeft ?? Math.max(0, Number(session.capacity ?? 0) - Number(session.players ?? 0)),
-    rawStatus: session.rawStatus ?? null,
+    spotsLeft: session.spotsLeft ?? Math.max(0, capacity - players),
+    rawStatus: session.status ?? null,
+    scheduledAt: session.scheduledAt ?? null,
     startsAt: session.startsAt ?? null,
     endedAt: session.endedAt ?? null,
+    visibility: session.visibility ?? null,
+    operatorName: session.operatorName ?? null,
+    managerName: session.managerName ?? null,
+    notes: session.notes ?? null,
   };
 }
 
@@ -190,10 +199,7 @@ const sessionsService = {
         : [];
       const filtered = filterSessions(sessions, params);
 
-      return {
-        sessions: filtered,
-        total: filtered.length,
-      };
+      return { sessions: filtered, total: filtered.length };
     } catch {
       const fallback = filterSessions(MOCK_SESSIONS, params);
       return { sessions: fallback, total: fallback.length };
@@ -215,52 +221,15 @@ const sessionsService = {
 
   async getSessionById(id) {
     try {
-      const payload = await fetchJson(`/sessions/${encodeURIComponent(id)}`);
-      return payload?.session ? normalizeSession(payload.session) : null;
+      const payload = await fetchJson("/sessions");
+      const sessions = Array.isArray(payload?.sessions)
+        ? payload.sessions.map(normalizeSession)
+        : [];
+
+      return sessions.find((session) => session.id === id || session.code === id) ?? null;
     } catch {
       return MOCK_SESSIONS.find((session) => session.id === id || session.code === id) ?? null;
     }
-  },
-
-  async createSession(payload, authFetch) {
-    const response = await authFetch(`${API_BASE_URL}/session-administration/sessions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    let data = {};
-    try {
-      data = await response.json();
-    } catch {
-      data = {};
-    }
-
-    if (!response.ok) {
-      throw new Error(data?.message || `Failed to create session (${response.status}).`);
-    }
-
-    const session = data?.session;
-    if (!session) {
-      throw new Error("Backend did not return created session payload.");
-    }
-
-    const createdAt = new Date(session.createdAt || Date.now());
-    const cardSession = {
-      id: String(session.sessionCode || session.sessionId),
-      code: String(session.sessionCode || session.sessionId),
-      date: createdAt.toISOString().slice(0, 10),
-      time: createdAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }),
-      status: mapBackendStatusToCardStatus(session.status),
-      players: 0,
-      capacity: Number(session.maxPlayers ?? payload.maxPlayers ?? 0),
-      pool: "TBD",
-      note: "Created now",
-      sessionId: session.sessionId,
-    };
-
-    MOCK_SESSIONS.unshift(cardSession);
-    return { created: session, cardSession };
   },
 };
 
@@ -342,6 +311,10 @@ function StatusBadge({ status, size = "sm" }) {
 function SessionCard({ session, featured = false }) {
   const dateObj = new Date(session.date);
   const sessionHref = getSessionHref(session);
+  const handleActionClick = (event) => {
+    event.stopPropagation();
+    window.location.href = sessionHref;
+  };
   const dateStr = dateObj.toLocaleDateString("en-US", {
     month: "short", day: "numeric", year: "numeric",
   }).toUpperCase();
@@ -550,6 +523,7 @@ function SessionCard({ session, featured = false }) {
         </span>
         <button
           type="button"
+          onClick={handleActionClick}
           style={{
             fontFamily: "Cinzel, serif", fontSize: 9, fontWeight: 700,
             letterSpacing: "0.14em", textTransform: "uppercase",
@@ -560,10 +534,6 @@ function SessionCard({ session, featured = false }) {
           }}
           onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.82"; e.currentTarget.style.transform = "translateY(-1px)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
-          onClick={(event) => {
-            event.stopPropagation();
-            window.location.href = sessionHref;
-          }}
         >
           {actionBtn.label}
         </button>
@@ -577,7 +547,6 @@ function SessionCard({ session, featured = false }) {
    ============================================================ */
 function FeaturedSessionBanner({ session }) {
   const [viewers, setViewers] = useState(1204);
-  const sessionHref = getSessionHref(session);
   useEffect(() => {
     const t = setInterval(() => {
       setViewers((v) => Math.max(0, v + Math.floor(Math.random() * 7) - 2));
@@ -663,9 +632,6 @@ function FeaturedSessionBanner({ session }) {
               letterSpacing: "0.14em", padding: "10px 24px", borderRadius: 3,
               background: "#A4303F", color: "#FFECCC", border: "none", cursor: "pointer",
               transition: "background 0.15s",
-            }}
-            onClick={() => {
-              window.location.href = sessionHref;
             }}>
               ▶  Watch Live
             </button>
@@ -674,9 +640,6 @@ function FeaturedSessionBanner({ session }) {
               letterSpacing: "0.14em", padding: "10px 20px", borderRadius: 3,
               background: "rgba(164,48,63,0.14)", color: "#FF9999",
               border: "1px solid rgba(164,48,63,0.35)", cursor: "pointer",
-            }}
-            onClick={() => {
-              window.location.href = sessionHref;
             }}>
               Place Bet
             </button>
@@ -946,7 +909,7 @@ function SessionTimeline({ sessions }) {
           background: "rgba(93,80,60,0.2)", zIndex: 0,
         }} />
 
-        {sorted.map((session) => (
+        {sorted.map((session, i) => (
           <div key={session.id} style={{
             display: "flex", flexDirection: "column", alignItems: "center",
             gap: 8, minWidth: 64, position: "relative", zIndex: 1,
@@ -1027,89 +990,15 @@ function ErrorState({ message, onRetry }) {
 const PAGE_SIZE = 8;
 
 export default function SessionsPage({ isDark }) {
-  const { authFetch, isAuthenticated } = useAuth();
   const [filters, setFilters] = useState({
     search: "", status: "all", month: null, sort: "nearest",
   });
   const [page, setPage] = useState(1);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState("");
-  const [createForm, setCreateForm] = useState({
-    sessionCode: "",
-    minPlayers: "1",
-    maxPlayers: "7",
-  });
 
   const { sessions, liveSession, loading, error, total, refetch } = useSessions(filters);
 
-  const handleOpenCreate = () => {
-    if (!isAuthenticated) {
-      window.location.href = `/login?redirect=${encodeURIComponent("/sessions")}`;
-      return;
-    }
-
-    setCreateError("");
-    setShowCreateModal(true);
-  };
-
-  const handleCreateSession = async () => {
-    const minPlayers = Number(createForm.minPlayers);
-    const maxPlayers = Number(createForm.maxPlayers);
-    const sessionCode = createForm.sessionCode.trim();
-
-    if (!sessionCode) {
-      setCreateError("Session code is required.");
-      return;
-    }
-    if (!Number.isInteger(minPlayers) || minPlayers <= 0) {
-      setCreateError("Min players must be a positive integer.");
-      return;
-    }
-    if (!Number.isInteger(maxPlayers) || maxPlayers <= 0 || maxPlayers > 7) {
-      setCreateError("Max players must be an integer between 1 and 7.");
-      return;
-    }
-    if (minPlayers > maxPlayers) {
-      setCreateError("Min players cannot exceed max players.");
-      return;
-    }
-
-    setCreating(true);
-    setCreateError("");
-
-    try {
-      const { created } = await sessionsService.createSession({
-        sessionCode,
-        minPlayers,
-        maxPlayers,
-      }, authFetch);
-
-      await refetch();
-      setShowCreateModal(false);
-      setCreateForm({
-        sessionCode: "",
-        minPlayers: "1",
-        maxPlayers: "7",
-      });
-
-      const identifier = created?.sessionCode || created?.sessionId;
-      if (identifier) {
-        window.location.href = `/sessions/${encodeURIComponent(String(identifier))}`;
-      }
-    } catch (err) {
-      setCreateError(err?.message || "Failed to create session.");
-    } finally {
-      setCreating(false);
-    }
-  };
-
   // Reset page on filter change
   useEffect(() => { setPage(1); }, [JSON.stringify(filters)]);
-  const handleFiltersChange = useCallback((nextFilters) => {
-    setFilters(nextFilters);
-    setPage(1);
-  }, []);
 
   const paginated = useMemo(() => sessions.slice(0, page * PAGE_SIZE), [sessions, page]);
   const hasMore = paginated.length < sessions.length;
@@ -1215,47 +1104,18 @@ export default function SessionsPage({ isDark }) {
           {/* ── FILTERS ── */}
           <SessionFilters
             filters={filters}
-            onChange={handleFiltersChange}
+            onChange={setFilters}
           />
 
           {/* ── RESULTS COUNT ── */}
           {!loading && !error && (
             <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-              marginBottom: 20,
-              flexWrap: "wrap",
+              fontFamily: "Cinzel, serif", fontSize: 8, letterSpacing: "0.18em",
+              color: "rgba(164,208,148,0.3)", marginBottom: 20,
             }}>
-              <div style={{
-                fontFamily: "Cinzel, serif", fontSize: 8, letterSpacing: "0.18em",
-                color: "rgba(164,208,148,0.3)",
-              }}>
-                {sessions.length > 0
-                  ? `SHOWING ${paginated.length} OF ${total} SESSION${total !== 1 ? "S" : ""}`
-                  : "NO RESULTS"}
-              </div>
-
-              <button
-                type="button"
-                onClick={handleOpenCreate}
-                style={{
-                  fontFamily: "Cinzel, serif",
-                  fontSize: 9,
-                  fontWeight: 700,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  padding: "10px 16px",
-                  borderRadius: 4,
-                  border: "1px solid rgba(164,48,63,0.45)",
-                  background: "rgba(164,48,63,0.18)",
-                  color: "#F2D0A4",
-                  cursor: "pointer",
-                }}
-              >
-                + Create Session
-              </button>
+              {sessions.length > 0
+                ? `SHOWING ${paginated.length} OF ${total} SESSION${total !== 1 ? "S" : ""}`
+                : "NO RESULTS"}
             </div>
           )}
 
@@ -1273,7 +1133,7 @@ export default function SessionsPage({ isDark }) {
           )}
 
           {!loading && !error && sessions.length === 0 && (
-            <EmptyState onClear={() => handleFiltersChange({ search: "", status: "all", month: null, sort: "nearest" })} />
+            <EmptyState onClear={() => setFilters({ search: "", status: "all", month: null, sort: "nearest" })} />
           )}
 
           {/* ── SESSIONS GRID ── */}
@@ -1318,151 +1178,6 @@ export default function SessionsPage({ isDark }) {
             </div>
           )}
         </main>
-
-        {showCreateModal && (
-          <div style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(8, 5, 4, 0.72)",
-            display: "grid",
-            placeItems: "center",
-            padding: 16,
-            zIndex: 1000,
-          }}>
-            <div style={{
-              width: "min(560px, 100%)",
-              background: "#18110d",
-              border: "1px solid rgba(164,48,63,0.35)",
-              borderRadius: 8,
-              padding: 20,
-              boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <h3 style={{
-                  margin: 0,
-                  fontFamily: "Cinzel, serif",
-                  fontSize: 18,
-                  color: "#F2D0A4",
-                  letterSpacing: "0.06em",
-                }}>
-                  Create Session
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "rgba(242,208,164,0.8)",
-                    fontSize: 18,
-                    cursor: "pointer",
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <p style={{ margin: "0 0 16px", color: "rgba(212,196,168,0.72)", fontSize: 13 }}>
-                Fill the required details. After creation, you will be redirected to the new session page.
-              </p>
-
-              <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-                {[
-                  { key: "sessionCode", label: "Session Code", type: "text", placeholder: "e.g. SESSION-27" },
-                  { key: "minPlayers", label: "Min Players", type: "number", min: 1, max: 7 },
-                  { key: "maxPlayers", label: "Max Players", type: "number", min: 1, max: 7 },
-                ].map((field) => (
-                  <label key={field.key} style={{ display: "grid", gap: 6 }}>
-                    <span style={{
-                      fontFamily: "Cinzel, serif",
-                      fontSize: 10,
-                      letterSpacing: "0.14em",
-                      color: "rgba(164,208,148,0.5)",
-                      textTransform: "uppercase",
-                    }}>
-                      {field.label}
-                    </span>
-                    <input
-                      type={field.type}
-                      min={field.min}
-                      max={field.max}
-                      placeholder={field.placeholder}
-                      value={createForm[field.key]}
-                      onChange={(event) => {
-                        setCreateError("");
-                        setCreateForm((prev) => ({ ...prev, [field.key]: event.target.value }));
-                      }}
-                      style={{
-                        minHeight: 40,
-                        borderRadius: 4,
-                        border: "1px solid rgba(93,80,60,0.42)",
-                        background: "rgba(0,0,0,0.24)",
-                        color: "#D4C4A8",
-                        padding: "0 10px",
-                      }}
-                    />
-                  </label>
-                ))}
-              </div>
-
-              {createError ? (
-                <div style={{
-                  marginTop: 14,
-                  padding: "10px 12px",
-                  borderRadius: 4,
-                  border: "1px solid rgba(164,48,63,0.45)",
-                  color: "#ffb3bf",
-                  background: "rgba(164,48,63,0.18)",
-                  fontSize: 13,
-                }}>
-                  {createError}
-                </div>
-              ) : null}
-
-              <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  disabled={creating}
-                  style={{
-                    fontFamily: "Cinzel, serif",
-                    fontSize: 10,
-                    letterSpacing: "0.12em",
-                    padding: "10px 14px",
-                    borderRadius: 4,
-                    border: "1px solid rgba(93,80,60,0.35)",
-                    background: "rgba(93,80,60,0.16)",
-                    color: "#D4C4A8",
-                    cursor: creating ? "not-allowed" : "pointer",
-                    opacity: creating ? 0.6 : 1,
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreateSession}
-                  disabled={creating}
-                  style={{
-                    fontFamily: "Cinzel, serif",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: "0.12em",
-                    padding: "10px 16px",
-                    borderRadius: 4,
-                    border: "1px solid rgba(164,48,63,0.5)",
-                    background: "rgba(164,48,63,0.24)",
-                    color: "#F2D0A4",
-                    cursor: creating ? "not-allowed" : "pointer",
-                    opacity: creating ? 0.6 : 1,
-                  }}
-                >
-                  {creating ? "Creating..." : "Create Session"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
         </div>
       </div>
     </>

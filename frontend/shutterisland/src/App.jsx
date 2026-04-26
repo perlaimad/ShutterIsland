@@ -4,6 +4,9 @@ import HomePage from "./pages/HomePage";
 import SessionsPage from "./pages/SessionsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import SessionDetailsPage from "./pages/SessionDetailsPage";
+import BookSessionPage from "./pages/BookSessionPage";
+import BettingPage from "./pages/BettingPage";
+import LiveWatchPage from "./pages/LiveWatchPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import { useAuth } from "./context/AuthContext";
@@ -56,6 +59,39 @@ const REGISTER_TICKER_ITEMS = [
   "ARENA ACCOUNT REQUEST",
 ];
 
+const BOOK_TICKER_ITEMS = [
+  "SESSION SCHEDULING ACTIVE",
+  "BOOKING CONSOLE ONLINE",
+  "NEW SESSION CREATION READY",
+  "ARENA TIMELINE OPEN",
+  "SESSION SCHEDULING ACTIVE",
+  "BOOKING CONSOLE ONLINE",
+  "NEW SESSION CREATION READY",
+  "ARENA TIMELINE OPEN",
+];
+
+const BET_TICKER_ITEMS = [
+  "BETTING FLOOR OPEN",
+  "LIVE ODDS TRACKING ACTIVE",
+  "SESSION MARKETS PENDING",
+  "WAGER CONSOLE ONLINE",
+  "BETTING FLOOR OPEN",
+  "LIVE ODDS TRACKING ACTIVE",
+  "SESSION MARKETS PENDING",
+  "WAGER CONSOLE ONLINE",
+];
+
+const WATCH_TICKER_ITEMS = [
+  "LIVE BROADCAST ACTIVE",
+  "SESSION FEED ONLINE",
+  "VIEWER CONSOLE OPEN",
+  "TRACK ELIMINATIONS LIVE",
+  "LIVE BROADCAST ACTIVE",
+  "SESSION FEED ONLINE",
+  "VIEWER CONSOLE OPEN",
+  "TRACK ELIMINATIONS LIVE",
+];
+
 function RequireAuth({ children }) {
   const { isAuthenticated } = useAuth();
 
@@ -83,7 +119,64 @@ function resolvePage(pathname) {
     };
   }
 
+  if (/^\/bet\/[^/]+$/i.test(normalizedPath)) {
+    return {
+      tickerItems: BET_TICKER_ITEMS,
+      statusBarProps: {
+        sessionLabel: "BETTING",
+        playersActive: "MARKETS",
+        round: "LIVE",
+      },
+      render: () => <BettingPage />,
+    };
+  }
+
+  if (/^\/watch\/[^/]+$/i.test(normalizedPath)) {
+    return {
+      tickerItems: WATCH_TICKER_ITEMS,
+      statusBarProps: {
+        sessionLabel: "WATCH",
+        playersActive: "LIVE",
+        round: "FEED",
+      },
+      render: () => <LiveWatchPage />,
+    };
+  }
+
   switch (normalizedPath) {
+    case "/watch":
+      return {
+        tickerItems: WATCH_TICKER_ITEMS,
+        statusBarProps: {
+          sessionLabel: "WATCH",
+          playersActive: "LIVE",
+          round: "FEED",
+        },
+        render: () => <LiveWatchPage />,
+      };
+
+    case "/bet":
+      return {
+        tickerItems: BET_TICKER_ITEMS,
+        statusBarProps: {
+          sessionLabel: "BETTING",
+          playersActive: "MARKETS",
+          round: "LIVE",
+        },
+        render: () => <BettingPage />,
+      };
+
+    case "/book":
+      return {
+        tickerItems: BOOK_TICKER_ITEMS,
+        statusBarProps: {
+          sessionLabel: "BOOKING",
+          playersActive: "QUEUE",
+          round: "OPEN",
+        },
+        render: () => <BookSessionPage />,
+      };
+
     case "/sessions":
       return {
         tickerItems: SESSIONS_TICKER_ITEMS,

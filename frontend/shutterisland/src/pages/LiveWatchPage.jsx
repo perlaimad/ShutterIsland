@@ -1,23 +1,16 @@
-/**
- * LiveWatchPage.jsx
- * Path: frontend/shutterisland/src/pages/LiveWatchPage.jsx
- *
- * Viewer-facing live watch page. Shows the session stream, live stats,
- * participants, eliminations feed, level progression, and betting summary.
- * MISSING ENDPOINTS (TODO comments placed at exact usage points below):
- *   1. Live stream URL / stream metadata
- *   2. Active session participants list (session_player records)
- *   3. Betting summary for a session
- *   4. Session list to find the "current live" session without knowing its ID
- * ────────────────────────────────────────────────────────────────────────────
- */
+
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./LiveWatchPage.module.css";
 
 /* ─── CONFIG ─────────────────────────────────────────────── */
 const API_BASE = import.meta.env?.VITE_API_URL ?? "http://localhost:4000";
+const DEFAULT_STREAM_URL = import.meta.env?.VITE_LIVE_STREAM_URL ?? "";
 const POLL_INTERVAL_MS = 5000;
+const SESSION_STREAM_URLS = {
+  "7": "/Haunted Chair! (JUMPSCARE WARNING!) - Rifqi Firdaus (1080p, h264).mp4",
+  "8": "/Horror Escape Room Haunted House with live actor - Escape Room Serbia (720p, h264).mp4",
+};
 
 /* ─── HELPERS ────────────────────────────────────────────── */
 const getSessionId = () => {
@@ -107,6 +100,11 @@ function StatusBadge({ status }) {
 /* ─── STREAM PLAYER AREA ─────────────────────────────────── */
 function StreamPlayer({ streamUrl, sessionCode, sessionStatus }) {
   const isLive = sessionStatus === "Active";
+  const [videoFailed, setVideoFailed] = useState(false);
+
+  useEffect(() => {
+    setVideoFailed(false);
+  }, [streamUrl]);
 
   return (
     <div className={styles.streamArea}>
@@ -129,7 +127,7 @@ function StreamPlayer({ streamUrl, sessionCode, sessionStatus }) {
 
       {/* ── video or placeholder ── */}
       <div className={styles.streamFrame}>
-        {streamUrl ? (
+        {streamUrl && !videoFailed ? (
           /* Wire this to a real <video> or iframe once the stream URL API exists */
           <video
             className={styles.streamVideo}
@@ -138,36 +136,14 @@ function StreamPlayer({ streamUrl, sessionCode, sessionStatus }) {
             muted
             playsInline
             controls
+            onError={() => setVideoFailed(true)}
           />
         ) : (
           <div className={styles.streamPlaceholder}>
-            {/*
-              TODO: Missing backend API — Live stream URL
-              ─────────────────────────────────────────────
-              Endpoint needed : GET /api/live-stream/sessions/:sessionId
-              Method          : GET
-              Auth            : Viewer access key required (ViewerAccessKey table)
-              Expected shape  : {
-                                  streamId       : number,
-                                  sessionId      : number,
-                                  streamStatus   : "Active" | "Inactive" | "Ended",
-                                  streamUrl      : string,   // HLS / RTMP / WebRTC URL
-                                  isEncrypted    : boolean,
-                                  startedAt      : string (ISO),
-                                  endedAt        : string | null
-                                }
-              Used in         : StreamPlayer component (LiveWatchPage.jsx)
-              Module          : LiveStreamingPaymentBetting/live.routes.js
-              ─────────────────────────────────────────────
-              Per SRS §VI.1.7 (SR-STR-1..4):
-              - The system shall provide viewers access to a live-streaming
-                interface for active sessions.
-              - All stream data shall be encrypted in transit.
-            */}
             <div className={styles.placeholderIcon}>▶</div>
             <div className={styles.placeholderTitle}>Stream Unavailable</div>
             <div className={styles.placeholderSub}>
-              Live stream access requires a valid viewer access key.
+              Add a valid stream video URL to show the live feed here.
               <br />
               The stream endpoint has not been implemented yet.
             </div>
@@ -209,31 +185,6 @@ function TimerBlock({ timer, viewers }) {
 
 /* ─── PARTICIPANTS PANEL ─────────────────────────────────── */
 function ParticipantsPanel({ participants, eliminatedIds }) {
-  /*
-    TODO: Missing backend API — Session participants list
-    ─────────────────────────────────────────────────────
-    Endpoint needed : GET /api/sessions/:sessionId/participants
-                      OR  GET /api/game-management/sessions/:sessionId/players
-    Method          : GET
-    Expected shape  : {
-                        sessionId    : number,
-                        sessionCode  : string,
-                        participants : [{
-                          playerId    : number,
-                          playerName  : string,
-                          slotNumber  : number,
-                          isAlive     : boolean,
-                          eliminatedAt: string | null,
-                          finalRank   : number | null,
-                          joinedAt    : string
-                        }]
-                      }
-    Used in         : ParticipantsPanel (LiveWatchPage.jsx) — fetchParticipants()
-    Module          : SessionAdminstration/session.routes.js
-                      (session_player + player JOIN query)
-    ─────────────────────────────────────────────────────
-    Fallback: derived from eliminations data when this endpoint is absent.
-  */
 
   if (!participants?.length) {
     return (
@@ -569,7 +520,7 @@ function LiveWatchPage() {
     Replace `null` with: streamData?.streamUrl
     once GET /api/live-stream/sessions/:sessionId is implemented.
   */
-  const streamUrl = null;
+  const streamUrl = SESSION_STREAM_URLS[String(sessionId || "")] || DEFAULT_STREAM_URL || null;
 
   /* ── Render ── */
   return (

@@ -68,6 +68,21 @@ function getSessionCodeFromPath() {
   }
 }
 
+function parseSessionIdCandidate(value) {
+  const direct = Number(value);
+  if (Number.isInteger(direct) && direct > 0) {
+    return direct;
+  }
+
+  const legacyMatch = String(value || "").trim().match(/^si-(\d+)$/i);
+  if (!legacyMatch) {
+    return null;
+  }
+
+  const parsed = Number(legacyMatch[1]);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 async function fetchJson(path) {
   return requestJson(path);
 }
@@ -302,10 +317,7 @@ function SessionDetailsPage() {
         matchesSessionIdentifier(entry, sessionCode),
       );
 
-      const parsedSessionIdFromUrl = Number(sessionCode);
-      const numericSessionIdFromUrl = Number.isInteger(parsedSessionIdFromUrl) && parsedSessionIdFromUrl > 0
-        ? parsedSessionIdFromUrl
-        : null;
+      const numericSessionIdFromUrl = parseSessionIdCandidate(sessionCode);
 
       const resolvedSessionEntry = sessionEntry || (numericSessionIdFromUrl
         ? {
