@@ -1,6 +1,14 @@
+import { useAuth } from "../../context/AuthContext";
 import styles from "./HomeTopBar.module.css";
 
 function HomeTopBar({ tickerItems, isDark, onToggleTheme }) {
+  const { isAuthenticated, staff, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    window.location.href = "/login";
+  };
+
   return (
     <div className={styles.topBar}>
       <div className={styles.ticker}>
@@ -35,7 +43,14 @@ function HomeTopBar({ tickerItems, isDark, onToggleTheme }) {
             </span>
             <span className={styles.themeToggleText}>{isDark ? "Dark" : "Light"}</span>
           </button>
-          <a href="/login" className={styles.navCta}>Enter Arena</a>
+          {isAuthenticated ? (
+            <>
+              <a href="/dashboard" className={styles.navLink}>{staff?.username ?? "Dashboard"}</a>
+              <button type="button" className={styles.navCta} onClick={handleLogout}>Logout</button>
+            </>
+          ) : (
+            <a href="/login" className={styles.navCta}>Enter Arena</a>
+          )}
         </div>
       </nav>
     </div>

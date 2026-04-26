@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./SessionDetailsPage.module.css";
 import { useAdminRealtime } from "../hooks/useAdminRealtime";
+import { getStoredAuth } from "../services/authService";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const REQUEST_TIMEOUT_MS = 5000;
@@ -76,9 +77,11 @@ async function requestJson(path, options = {}) {
   const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
+    const token = getStoredAuth()?.token;
     const response = await fetch(`${API_BASE}${path}`, {
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.headers || {}),
       },
       method: options.method || "GET",

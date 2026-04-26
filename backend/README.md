@@ -19,6 +19,14 @@ Minimal backend scaffold for the arena/session API contract in `docs/SRS/arena-d
 
 ## Available Routes
 - `GET /health`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/staff/register`
+- `POST /api/auth/staff/login`
+- `GET /api/auth/staff/me`
+- `POST /api/auth/viewer/login`
+- `GET /api/auth/viewer/me`
+- `GET /api/auth/access-control/roles`
 - `GET /api/arena/current`
 - `GET /api/arena/current/markers`
 - `GET /api/arena/current/obstacles`
@@ -28,7 +36,9 @@ Minimal backend scaffold for the arena/session API contract in `docs/SRS/arena-d
 - `GET /api/sessions/:romanId/eliminations`
 - `GET /api/sessions/:romanId/positions/latest`
 
-Current API route handlers return `501 Not Implemented` placeholders until module repositories/services are implemented.
+Staff authentication returns Bearer tokens for protected staff routes. New staff registrations
+are created with the `Staff` role; administrator accounts should be managed directly in the
+database or through a future admin-only staff-management endpoint.
 
 ## Important Note
 SQL files in `database/migrations` and `database/seeders` are now MySQL 8-compatible.  

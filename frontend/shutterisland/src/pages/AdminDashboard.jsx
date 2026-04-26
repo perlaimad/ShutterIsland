@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import styles from "./AdminDashboard.module.css";
 import { useAdminRealtime } from "../hooks/useAdminRealtime";
+import { useAuth } from "../context/AuthContext";
 
 const API_BASE = import.meta.env?.VITE_API_URL ?? "http://localhost:4000";
 
@@ -105,9 +106,9 @@ function formatAxisLabel(value) {
   return String(value).replace(/^Session\s+/i, "");
 }
 
-async function apiGet(path, fallback) {
+async function apiGet(path, fallback, authFetch) {
   try {
-    const res = await fetch(`${API_BASE}${path}`);
+    const res = await authFetch(`${API_BASE}${path}`);
     if (!res.ok) throw new Error(`${res.status}`);
     return await res.json();
   } catch {
@@ -115,8 +116,8 @@ async function apiGet(path, fallback) {
   }
 }
 
-async function apiPost(path) {
-  const res = await fetch(`${API_BASE}${path}`, { method: "POST" });
+async function apiPost(path, authFetch) {
+  const res = await authFetch(`${API_BASE}${path}`, { method: "POST" });
   if (!res.ok) throw new Error(`${res.status}`);
   return res.json();
 }
@@ -237,7 +238,7 @@ function SessionsTable({ sessions, selectedId, onSelect, onAction, actionLoading
                         type="button"
                         className={`${styles.ctaBtn} ${styles.ctaBtnStart}`}
                         disabled={actionLoading === session.id}
-                        onClick={() => onAction(session.id, normalizedStatus === "Paused" ? "resume" : "start")}
+                        onClick={() => onAction(session.id, "resume")}
                       >
                         {normalizedStatus === "Paused" ? "Resume" : "Start"}
                       </button>
@@ -745,6 +746,7 @@ function ErrorBanner({ message, onDismiss }) {
 }
 
 function AdminDashboard() {
+  const { authFetch } = useAuth();
   const [overview, setOverview] = useState(fallbackOverview);
   const [sessions, setSessions] = useState(fallbackSessions);
   const [participants, setParticipants] = useState(fallbackParticipants);
@@ -765,8 +767,8 @@ function AdminDashboard() {
 
     try {
       const [overviewData, sessionsData] = await Promise.all([
-        apiGet("/api/admin/dashboard/overview", fallbackOverview),
-        apiGet("/api/admin/dashboard/sessions", fallbackSessions),
+        apiGet("/api/admin/dashboard/overview", fallbackOverview, authFetch),
+        apiGet("/api/admin/dashboard/sessions", fallbackSessions, authFetch),
       ]);
 
       const normalizedSessions = Array.isArray(sessionsData)
@@ -795,7 +797,7 @@ function AdminDashboard() {
       if (!silent) setLoading(false);
       setLastRefreshed(new Date().toLocaleTimeString());
     }
-  }, []);
+  }, [authFetch]);
 
   const fetchSessionDetail = useCallback(async (sessionId) => {
     if (!sessionId) return;
@@ -804,9 +806,9 @@ function AdminDashboard() {
     const backendSessionId = selectedSessionEntry?.sessionId ?? sessionId;
 
     const [participantsData, progressionData, logsData] = await Promise.all([
-      apiGet("/api/admin/dashboard/participants", fallbackParticipants),
-      apiGet(`/api/game-management/sessions/${backendSessionId}/levels/progression`, fallbackProgression),
-      apiGet("/api/admin/logs/audit", fallbackLogs),
+      apiGet("/api/admin/dashboard/participants", fallbackParticipants, authFetch),
+      apiGet(`/api/game-management/sessions/${backendSessionId}/levels/progression`, fallbackProgression, authFetch),
+      apiGet("/api/admin/logs/audit", fallbackLogs, authFetch),
     ]);
 
     const normalizedParticipants = Array.isArray(participantsData)
@@ -833,7 +835,7 @@ function AdminDashboard() {
     setParticipants(normalizedParticipants);
     setProgression(normalizedProgression);
     setLogs(normalizedLogs);
-  }, [sessions]);
+  }, [authFetch, sessions]);
 
   const handleAction = useCallback(async (sessionId, action) => {
     setActionLoading(sessionId);
@@ -841,14 +843,14 @@ function AdminDashboard() {
       const selectedSessionEntry = (sessions ?? []).find((session) => session.id === sessionId);
       const backendSessionId = selectedSessionEntry?.sessionId ?? sessionId;
 
-      await apiPost(`/api/sessions/${backendSessionId}/${action}`);
+      await apiPost(`/api/session-administration/sessions/${backendSessionId}/${action}`, authFetch);
       await fetchAll(true);
     } catch {
       setError(`Action "${action}" failed for ${sessionId}.`);
     } finally {
       setActionLoading(null);
     }
-  }, [fetchAll, sessions]);
+  }, [authFetch, fetchAll, sessions]);
 
   useEffect(() => {
     fetchAll();
@@ -1090,7 +1092,7 @@ function AdminDashboard() {
     setError(null);
 
     try {
-      const res = await fetch(`${API_BASE}${path}`);
+      const res = await authFetch(`${API_BASE}${path}`);
       if (!res.ok) throw new Error(`${res.status}`);
 
       const data = await res.json();
@@ -1101,7 +1103,7 @@ function AdminDashboard() {
     } finally {
       setReportLoading(null);
     }
-  }, [createReportModel]);
+  }, [authFetch, createReportModel]);
 
   return (
     <main className={`${styles.page} min-h-screen w-full overflow-x-hidden`}>
