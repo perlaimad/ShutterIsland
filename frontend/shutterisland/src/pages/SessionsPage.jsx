@@ -14,6 +14,7 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { getAuthHeaders } from "../lib/auth";
 
 /* ============================================================
    1. CONFIGURATION
@@ -102,22 +103,26 @@ const MOCK_SESSIONS = [
 ];
 
 function normalizeSession(session) {
+  const normalizedStatus = session.status
+    ? mapBackendStatusToCardStatus(session.status)
+    : (session.status ?? "upcoming");
+
   return {
     id: session.id ?? String(session.sessionId ?? session.session_id ?? ""),
     code: session.code ?? session.romanId ?? session.sessionCode ?? session.id ?? "",
     date: session.date ?? (session.startsAt ? String(session.startsAt).slice(0, 10) : ""),
     time: session.time ?? (session.startsAt ? new Date(session.startsAt).toISOString().slice(11, 16) : ""),
-    status: session.status ?? "upcoming",
+    status: normalizedStatus,
     players: Number(session.players ?? session.playerCount ?? 0),
     capacity: Number(session.capacity ?? session.maxPlayers ?? 0),
     note: session.note
       ?? (session.statusLabel
         ? session.statusLabel
-        : session.status === "live"
+        : normalizedStatus === "live"
           ? "Live Now"
-          : session.status === "open"
+          : normalizedStatus === "open"
             ? "Booking Open"
-            : session.status === "finished"
+            : normalizedStatus === "finished"
               ? "Concluded"
               : "Opens Soon"),
     winner: session.winner ?? null,
@@ -165,7 +170,11 @@ function filterSessions(sessions, params = {}) {
 }
 
 async function fetchJson(path) {
-  const response = await fetch(`${API_BASE_URL}${path}`);
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: {
+      ...getAuthHeaders()
+    }
+  });
 
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
@@ -183,7 +192,7 @@ const sessionsService = {
         query.set("month", `2026-${String(params.month + 1).padStart(2, "0")}`);
       }
 
-      const payload = await fetchJson(`/sessions${query.toString() ? `?${query.toString()}` : ""}`);
+      const payload = await fetchJson(`/session-administration/sessions${query.toString() ? `?${query.toString()}` : ""}`);
       const sessions = Array.isArray(payload?.sessions)
         ? payload.sessions.map(normalizeSession)
         : [];
@@ -201,7 +210,7 @@ const sessionsService = {
 
   async getLiveSession() {
     try {
-      const payload = await fetchJson("/sessions");
+      const payload = await fetchJson("/session-administration/sessions");
       const sessions = Array.isArray(payload?.sessions)
         ? payload.sessions.map(normalizeSession)
         : [];
@@ -214,7 +223,7 @@ const sessionsService = {
 
   async getSessionById(id) {
     try {
-      const payload = await fetchJson(`/sessions/${encodeURIComponent(id)}`);
+      const payload = await fetchJson(`/session-administration/sessions/${encodeURIComponent(id)}`);
       return payload?.session ? normalizeSession(payload.session) : null;
     } catch {
       return MOCK_SESSIONS.find((session) => session.id === id || session.code === id) ?? null;
@@ -224,7 +233,10 @@ const sessionsService = {
   async createSession(payload) {
     const response = await fetch(`${API_BASE_URL}/session-administration/sessions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders()
+      },
       body: JSON.stringify(payload),
     });
 
@@ -1041,6 +1053,10 @@ export default function SessionsPage({ isDark }) {
   });
 
   const { sessions, liveSession, loading, error, total, refetch } = useSessions(filters);
+  const serializedFilters = JSON.stringify(filters);
+  const handleFiltersChange = useCallback((nextFilters) => {
+    setFilters(nextFilters);
+  }, []);
 
   const handleOpenCreate = () => {
     setCreateError("");
@@ -1106,7 +1122,7 @@ export default function SessionsPage({ isDark }) {
   };
 
   // Reset page on filter change
-  useEffect(() => { setPage(1); }, [JSON.stringify(filters)]);
+  useEffect(() => { setPage(1); }, [serializedFilters]);
 
   const paginated = useMemo(() => sessions.slice(0, page * PAGE_SIZE), [sessions, page]);
   const hasMore = paginated.length < sessions.length;

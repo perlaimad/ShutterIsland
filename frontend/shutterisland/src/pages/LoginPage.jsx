@@ -1,5 +1,8 @@
 import { useState } from "react";
 import styles from "./LoginPage.module.css";
+import { saveAuthSession } from "../lib/auth";
+
+const API_BASE = import.meta.env?.VITE_API_URL ?? "http://localhost:4000";
 
 function LoginPage() {
   const [credentials, setCredentials] = useState({
@@ -17,9 +20,47 @@ function LoginPage() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setStatus("Access request staged. Connect this form to the auth API when credentials are ready.");
+    setSubmitting(true);
+    setStatus("");
+
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/staff/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          identifier: credentials.email,
+          password: credentials.password
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.message || "Login failed.");
+      }
+
+      saveAuthSession({
+        actorType: "staff",
+        token: payload.token,
+        tokenType: payload.tokenType,
+        expiresAt: payload.expiresAt,
+        profile: payload.staff,
+        remember: credentials.remember
+      });
+      setStatus("Login successful. Redirecting to dashboard...");
+      window.setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 350);
+    } catch (error) {
+      setStatus(error.message || "Login failed.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -86,8 +127,8 @@ function LoginPage() {
             </label>
           </div>
 
-          <button type="submit" className={styles.submitButton}>
-            Sign In
+          <button type="submit" className={styles.submitButton} disabled={submitting}>
+            {submitting ? "Signing In..." : "Sign In"}
           </button>
 
           <p className={styles.switchPrompt}>

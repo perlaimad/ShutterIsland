@@ -121,7 +121,69 @@ CREATE TABLE room (
 ) ENGINE=InnoDB;
 
 -- =========================
--- 6) SessionRoom (room instance per session)
+-- 6) ArenaZone (optional geometry source)
+-- =========================
+CREATE TABLE arena_zone (
+  zone_id        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  zone_code      VARCHAR(32) NOT NULL,
+  zone_name      VARCHAR(120) NOT NULL,
+  center_x       DECIMAL(10,2) NOT NULL,
+  center_y       DECIMAL(10,2) NOT NULL,
+  radius         DECIMAL(10,2) NOT NULL,
+  is_active      TINYINT(1) NOT NULL DEFAULT 1,
+  created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (zone_id),
+  UNIQUE KEY uq_arena_zone_code (zone_code)
+) ENGINE=InnoDB;
+
+-- =========================
+-- 7) ArenaMarker
+-- =========================
+CREATE TABLE arena_marker (
+  marker_id      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  zone_id        BIGINT UNSIGNED NOT NULL,
+  marker_code    VARCHAR(32) NOT NULL,
+  marker_name    VARCHAR(120) NOT NULL,
+  coord_x        DECIMAL(10,2) NOT NULL,
+  coord_y        DECIMAL(10,2) NOT NULL,
+  label_color    VARCHAR(32) NOT NULL DEFAULT '#F2D0A4',
+  created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (marker_id),
+  UNIQUE KEY uq_arena_marker_code (marker_code),
+  KEY idx_arena_marker_zone (zone_id),
+
+  CONSTRAINT fk_arena_marker_zone
+    FOREIGN KEY (zone_id) REFERENCES arena_zone(zone_id)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- =========================
+-- 8) ArenaObstacle
+-- =========================
+CREATE TABLE arena_obstacle (
+  obstacle_id    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  zone_id        BIGINT UNSIGNED NOT NULL,
+  obstacle_code  VARCHAR(32) NOT NULL,
+  obstacle_name  VARCHAR(120) NOT NULL,
+  coord_x        DECIMAL(10,2) NOT NULL,
+  coord_y        DECIMAL(10,2) NOT NULL,
+  width_units    DECIMAL(10,2) NOT NULL DEFAULT 1,
+  height_units   DECIMAL(10,2) NOT NULL DEFAULT 1,
+  created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (obstacle_id),
+  UNIQUE KEY uq_arena_obstacle_code (obstacle_code),
+  KEY idx_arena_obstacle_zone (zone_id),
+
+  CONSTRAINT fk_arena_obstacle_zone
+    FOREIGN KEY (zone_id) REFERENCES arena_zone(zone_id)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- =========================
+-- 9) SessionRoom (room instance per session)
 -- =========================
 CREATE TABLE session_room (
   session_room_id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

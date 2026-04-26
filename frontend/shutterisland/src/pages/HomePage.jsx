@@ -150,9 +150,9 @@ function HomePage() {
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [viewers, setViewers] = useState(1204);
   const [bets, setBets] = useState(342);
-  const [winnerImageBroken, setWinnerImageBroken] = useState(false);
+  const [brokenWinnerImages, setBrokenWinnerImages] = useState({});
   const [secondsLeft, setSecondsLeft] = useState(257);
-  const [isCountdownFlashing, setIsCountdownFlashing] = useState(false);
+  const [countdownFlashOn, setCountdownFlashOn] = useState(false);
   const [curYear, setCurYear] = useState(2026);
   const [curMonth, setCurMonth] = useState(3);
   const [selectedDay, setSelectedDay] = useState(null);
@@ -172,6 +172,7 @@ function HomePage() {
 
   const leadingPlayer = useMemo(() => players.find((player) => player.leading) ?? players[0], [players]);
   const leadingOdds = useMemo(() => (1.25 + (100 - leadingPlayer.survival) / 75).toFixed(2), [leadingPlayer.survival]);
+  const winnerImageBroken = Boolean(brokenWinnerImages[leadingPlayer.id]);
 
   const countdown = useMemo(() => {
     const h = Math.floor(secondsLeft / 3600);
@@ -206,22 +207,18 @@ function HomePage() {
 
   useEffect(() => {
     if (secondsLeft > 0) {
-      setIsCountdownFlashing(false);
       return undefined;
     }
 
     const flashTimer = window.setInterval(() => {
-      setIsCountdownFlashing((prev) => !prev);
+      setCountdownFlashOn((prev) => !prev);
     }, 450);
 
     return () => {
       window.clearInterval(flashTimer);
     };
   }, [secondsLeft]);
-
-  useEffect(() => {
-    setWinnerImageBroken(false);
-  }, [leadingPlayer.id]);
+  const isCountdownFlashing = secondsLeft === 0 && countdownFlashOn;
 
   const calendarCells = useMemo(() => {
     const firstWeekday = new Date(curYear, curMonth, 1).getDay();
@@ -361,7 +358,12 @@ function HomePage() {
                     className={styles.winnerPortrait}
                     src={leadingPlayer.image}
                     alt={`${leadingPlayer.name} portrait`}
-                    onError={() => setWinnerImageBroken(true)}
+                    onError={() => {
+                      setBrokenWinnerImages((current) => ({
+                        ...current,
+                        [leadingPlayer.id]: true
+                      }));
+                    }}
                   />
                 ) : (
                   <div className={styles.winnerSilhouette} aria-hidden="true">

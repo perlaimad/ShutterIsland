@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./SessionDetailsPage.module.css";
 import { useAdminRealtime } from "../hooks/useAdminRealtime";
+import { getAuthHeaders } from "../lib/auth";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const REQUEST_TIMEOUT_MS = 5000;
+const EMPTY_OBJECT = Object.freeze({});
+const EMPTY_ARRAY = Object.freeze([]);
 
 function formatDateTime(value) {
   if (!value) return "-";
@@ -79,6 +82,7 @@ async function requestJson(path, options = {}) {
     const response = await fetch(`${API_BASE}${path}`, {
       headers: {
         "Content-Type": "application/json",
+        ...getAuthHeaders(),
         ...(options.headers || {}),
       },
       method: options.method || "GET",
@@ -448,10 +452,19 @@ function SessionDetailsPage() {
     onUpdate: handleRealtimeUpdate,
   });
 
-  const session = bundle.session || {};
-  const participants = Array.isArray(bundle.participants) ? bundle.participants : [];
-  const progression = Array.isArray(bundle.progression) ? bundle.progression : [];
-  const logs = Array.isArray(bundle.logs) ? bundle.logs : [];
+  const session = useMemo(() => bundle.session ?? EMPTY_OBJECT, [bundle.session]);
+  const participants = useMemo(
+    () => (Array.isArray(bundle.participants) ? bundle.participants : EMPTY_ARRAY),
+    [bundle.participants]
+  );
+  const progression = useMemo(
+    () => (Array.isArray(bundle.progression) ? bundle.progression : EMPTY_ARRAY),
+    [bundle.progression]
+  );
+  const logs = useMemo(
+    () => (Array.isArray(bundle.logs) ? bundle.logs : EMPTY_ARRAY),
+    [bundle.logs]
+  );
   const numericSessionId = Number(session.session_id || session.sessionId || bundle.metrics?.sourceSessionId);
   const hasValidSessionId = Number.isFinite(numericSessionId) && numericSessionId > 0;
 

@@ -2393,3 +2393,221 @@ export const triggerChallengeSequence = async (sessionId, options = {}) => {
     connection.release();
   }
 };
+
+const isMissingTableError = (error) => error?.code === "ER_NO_SUCH_TABLE";
+
+export const getArenaCurrent = async () => {
+  const connection = await pool.getConnection();
+
+  try {
+    try {
+      const [zoneRows] = await connection.execute(
+        `SELECT
+           zone_id,
+           zone_code,
+           zone_name,
+           is_active,
+           center_x,
+           center_y,
+           radius
+         FROM arena_zone
+         ORDER BY zone_id ASC`
+      );
+
+      const [activeSessionRows] = await connection.execute(
+        `SELECT
+           session_id,
+           session_code,
+           status,
+           started_at,
+           ended_at
+         FROM game_session
+         WHERE status IN ('Active', 'Paused', 'Lobby')
+         ORDER BY created_at DESC
+         LIMIT 1`
+      );
+
+      return {
+        source: "arena_zone",
+        activeSession: activeSessionRows[0]
+          ? {
+              sessionId: Number(activeSessionRows[0].session_id),
+              sessionCode: activeSessionRows[0].session_code,
+              status: activeSessionRows[0].status,
+              startedAt: toIsoString(activeSessionRows[0].started_at),
+              endedAt: toIsoString(activeSessionRows[0].ended_at)
+            }
+          : null,
+        zones: zoneRows.map((zone) => ({
+          zoneId: Number(zone.zone_id),
+          zoneCode: zone.zone_code,
+          zoneName: zone.zone_name,
+          isActive: Boolean(zone.is_active),
+          center: {
+            x: Number(zone.center_x),
+            y: Number(zone.center_y)
+          },
+          radius: Number(zone.radius)
+        }))
+      };
+    } catch (error) {
+      if (!isMissingTableError(error)) {
+        throw error;
+      }
+    }
+
+    const [roomRows] = await connection.execute(
+      `SELECT
+         room_id,
+         sequence_order,
+         name,
+         difficulty_level,
+         description
+       FROM room
+       ORDER BY sequence_order ASC, room_id ASC`
+    );
+
+    return {
+      source: "room",
+      zones: roomRows.map((room) => ({
+        zoneId: Number(room.room_id),
+        zoneCode: `ROOM-${room.sequence_order ?? room.room_id}`,
+        zoneName: room.name,
+        isActive: true,
+        sequenceOrder: room.sequence_order === null ? null : Number(room.sequence_order),
+        difficultyLevel: Number(room.difficulty_level),
+        description: room.description
+      }))
+    };
+  } finally {
+    connection.release();
+  }
+};
+
+export const getArenaMarkers = async () => {
+  const connection = await pool.getConnection();
+
+  try {
+    try {
+      const [rows] = await connection.execute(
+        `SELECT
+           marker_id,
+           marker_code,
+           marker_name,
+           coord_x,
+           coord_y,
+           label_color,
+           zone_id
+         FROM arena_marker
+         ORDER BY marker_id ASC`
+      );
+
+      return {
+        source: "arena_marker",
+        markers: rows.map((marker) => ({
+          markerId: Number(marker.marker_id),
+          markerCode: marker.marker_code,
+          markerName: marker.marker_name,
+          x: Number(marker.coord_x),
+          y: Number(marker.coord_y),
+          labelColor: marker.label_color,
+          zoneId: Number(marker.zone_id)
+        }))
+      };
+    } catch (error) {
+      if (!isMissingTableError(error)) {
+        throw error;
+      }
+    }
+
+    const [rows] = await connection.execute(
+      `SELECT
+         room_id,
+         sequence_order,
+         name
+       FROM room
+       ORDER BY sequence_order ASC, room_id ASC`
+    );
+
+    return {
+      source: "room-derived",
+      markers: rows.map((room) => ({
+        markerId: Number(room.room_id),
+        markerCode: `M-${room.sequence_order ?? room.room_id}`,
+        markerName: room.name,
+        x: Number(room.sequence_order ?? room.room_id) * 10,
+        y: Number(room.sequence_order ?? room.room_id) * 8,
+        labelColor: "#F2D0A4",
+        zoneId: Number(room.room_id)
+      }))
+    };
+  } finally {
+    connection.release();
+  }
+};
+
+export const getArenaObstacles = async () => {
+  const connection = await pool.getConnection();
+
+  try {
+    try {
+      const [rows] = await connection.execute(
+        `SELECT
+           obstacle_id,
+           obstacle_code,
+           obstacle_name,
+           coord_x,
+           coord_y,
+           width_units,
+           height_units,
+           zone_id
+         FROM arena_obstacle
+         ORDER BY obstacle_id ASC`
+      );
+
+      return {
+        source: "arena_obstacle",
+        obstacles: rows.map((obstacle) => ({
+          obstacleId: Number(obstacle.obstacle_id),
+          obstacleCode: obstacle.obstacle_code,
+          obstacleName: obstacle.obstacle_name,
+          x: Number(obstacle.coord_x),
+          y: Number(obstacle.coord_y),
+          widthUnits: Number(obstacle.width_units),
+          heightUnits: Number(obstacle.height_units),
+          zoneId: Number(obstacle.zone_id)
+        }))
+      };
+    } catch (error) {
+      if (!isMissingTableError(error)) {
+        throw error;
+      }
+    }
+
+    const [rows] = await connection.execute(
+      `SELECT
+         room_id,
+         sequence_order,
+         name,
+         difficulty_level
+       FROM room
+       ORDER BY sequence_order ASC, room_id ASC`
+    );
+
+    return {
+      source: "room-derived",
+      obstacles: rows.map((room) => ({
+        obstacleId: Number(room.room_id),
+        obstacleCode: `O-${room.sequence_order ?? room.room_id}`,
+        obstacleName: `${room.name} Hazard`,
+        x: Number(room.sequence_order ?? room.room_id) * 7,
+        y: Number(room.sequence_order ?? room.room_id) * 6,
+        widthUnits: Math.max(1, Number(room.difficulty_level)),
+        heightUnits: Math.max(1, Number(room.difficulty_level)),
+        zoneId: Number(room.room_id)
+      }))
+    };
+  } finally {
+    connection.release();
+  }
+};

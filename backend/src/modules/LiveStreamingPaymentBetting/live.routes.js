@@ -1,7 +1,33 @@
 import { Router } from "express";
+import crypto from "crypto";
 import { pool } from "../../config/db.js";
+import {
+  attachAuthenticatedManager,
+  authenticateAnyActor,
+  authenticateStaff,
+  authenticateViewer,
+  authorizeAnyPermission
+} from "../AuthenticationAccessControl/auth.middleware.js";
+import { AUTH_PERMISSIONS } from "../AuthenticationAccessControl/access-control.js";
 
 export const liveStreamingPaymentBettingRouter = Router();
+
+const requireLiveRead = [
+  authenticateAnyActor,
+  authorizeAnyPermission(AUTH_PERMISSIONS.STREAM_READ, AUTH_PERMISSIONS.REPORT_READ)
+];
+
+const requireStreamManage = [
+  authenticateStaff,
+  authorizeAnyPermission(AUTH_PERMISSIONS.STREAM_MANAGE, AUTH_PERMISSIONS.VIEWER_ACCESS_MANAGE),
+  attachAuthenticatedManager
+];
+
+const requireBetAdmin = [
+  authenticateStaff,
+  authorizeAnyPermission(AUTH_PERMISSIONS.REPORT_READ, AUTH_PERMISSIONS.SESSION_MANAGE),
+  attachAuthenticatedManager
+];
 
 const asPositiveInteger = (value) => {
   const parsed = Number(value);
@@ -64,7 +90,7 @@ const findSessionByIdentifier = async (connection, identifier) => {
   return rows[0] ?? null;
 };
 
-liveStreamingPaymentBettingRouter.get("/sessions/:sessionIdentifier/live", async (req, res) => {
+liveStreamingPaymentBettingRouter.get("/sessions/:sessionIdentifier/live", ...requireLiveRead, async (req, res) => {
   const connection = await pool.getConnection();
 
   try {
@@ -329,3 +355,381 @@ liveStreamingPaymentBettingRouter.get("/sessions/:sessionIdentifier/live", async
     connection.release();
   }
 });
+
+liveStreamingPaymentBettingRouter.post(
+  "/sessions/:sessionIdentifier/viewer-access-keys",
+  ...requireStreamManage,
+  async (req, res) => {
+    const viewerIdentifier = String(req.body?.viewerIdentifier ?? "").trim();
+    const expiresInMinutes = Number(req.body?.expiresInMinutes ?? 120);
+    const managerId = Number(req.body?.managerId);
+
+    if (!viewerIdentifier) {
+      return res.status(400).json({ message: "viewerIdentifier is required." });
+    }
+
+    if (!Number.isFinite(expiresInMinutes) || expiresInMinutes <= 0 || expiresInMinutes > 720) {
+      return res.status(400).json({ message: "expiresInMinutes must be between 1 and 720." });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const session = await findSessionByIdentifier(connection, req.params.sessionIdentifier);
+
+      if (!session || !session.stream_id) {
+        await connection.rollback();
+        return res.status(404).json({ message: "Session stream was not found." });
+      }
+
+      const keySalt = crypto.randomBytes(5).toString("hex").toUpperCase();
+      const keyPrefix = String(session.session_code || session.session_id).replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+      const accessKey = `KEY-${keyPrefix}-${keySalt}`;
+
+      const [result] = await connection.execute(
+        `INSERT INTO viewer_access_key (
+           stream_id,
+           viewer_identifier,
+           access_key,
+           access_status,
+           issued_at,
+           expires_at,
+           issued_by_manager_id
+         )
+         VALUES (?, ?, ?, 'Active', NOW(), DATE_ADD(NOW(), INTERVAL ? MINUTE), ?)`,
+        [session.stream_id, viewerIdentifier, accessKey, expiresInMinutes, managerId]
+      );
+
+      await connection.execute(
+        `INSERT INTO audit_log (
+           manager_id,
+           session_id,
+           action_type,
+           details_json
+         )
+         VALUES (?, ?, 'ISSUE_VIEWER_ACCESS_KEY', ?)`,
+        [
+          managerId,
+          session.session_id,
+          JSON.stringify({
+            accessId: Number(result.insertId),
+            viewerIdentifier
+          })
+        ]
+      );
+
+      await connection.commit();
+      return res.status(201).json({
+        accessId: Number(result.insertId),
+        sessionId: Number(session.session_id),
+        streamId: Number(session.stream_id),
+        viewerIdentifier,
+        accessKey,
+        expiresInMinutes
+      });
+    } catch (error) {
+      await connection.rollback();
+      if (error?.code === "ER_DUP_ENTRY") {
+        return res.status(409).json({
+          message: "This viewer already has an access key for the stream."
+        });
+      }
+      return res.status(500).json({
+        message: "Failed to issue viewer access key.",
+        error: error.message
+      });
+    } finally {
+      connection.release();
+    }
+  }
+);
+
+liveStreamingPaymentBettingRouter.post(
+  "/sessions/:sessionIdentifier/viewer-access-keys/:accessId/revoke",
+  ...requireStreamManage,
+  async (req, res) => {
+    const accessId = asPositiveInteger(req.params.accessId);
+    const managerId = Number(req.body?.managerId);
+
+    if (!accessId) {
+      return res.status(400).json({ message: "accessId must be a positive integer." });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const session = await findSessionByIdentifier(connection, req.params.sessionIdentifier);
+
+      if (!session || !session.stream_id) {
+        await connection.rollback();
+        return res.status(404).json({ message: "Session stream was not found." });
+      }
+
+      const [updateResult] = await connection.execute(
+        `UPDATE viewer_access_key
+         SET access_status = 'Revoked'
+         WHERE access_id = ? AND stream_id = ?`,
+        [accessId, session.stream_id]
+      );
+
+      if (updateResult.affectedRows === 0) {
+        await connection.rollback();
+        return res.status(404).json({ message: "Access key was not found for this session stream." });
+      }
+
+      await connection.execute(
+        `INSERT INTO audit_log (
+           manager_id,
+           session_id,
+           action_type,
+           details_json
+         )
+         VALUES (?, ?, 'REVOKE_VIEWER_ACCESS_KEY', ?)`,
+        [
+          managerId,
+          session.session_id,
+          JSON.stringify({
+            accessId
+          })
+        ]
+      );
+
+      await connection.commit();
+      return res.json({
+        revoked: true,
+        accessId,
+        sessionId: Number(session.session_id)
+      });
+    } catch (error) {
+      await connection.rollback();
+      return res.status(500).json({
+        message: "Failed to revoke viewer access key.",
+        error: error.message
+      });
+    } finally {
+      connection.release();
+    }
+  }
+);
+
+liveStreamingPaymentBettingRouter.post(
+  "/sessions/:sessionIdentifier/bets",
+  authenticateViewer,
+  authorizeAnyPermission(AUTH_PERMISSIONS.BET_PLACE),
+  async (req, res) => {
+    const connection = await pool.getConnection();
+    const betType = String(req.body?.betType ?? "").trim();
+    const predictedValue = String(req.body?.predictedValue ?? "").trim();
+    const viewerIdentifier = req.viewer?.viewerIdentifier;
+    const playerId = req.body?.playerId === undefined ? null : asPositiveInteger(req.body.playerId);
+    const betAmount = Number(req.body?.betAmount);
+
+    if (!betType || !predictedValue) {
+      return res.status(400).json({ message: "betType and predictedValue are required." });
+    }
+
+    if (!Number.isFinite(betAmount) || betAmount <= 0) {
+      return res.status(400).json({ message: "betAmount must be a positive number." });
+    }
+
+    if (!viewerIdentifier) {
+      return res.status(403).json({ message: "Viewer identifier is required for bet placement." });
+    }
+
+    try {
+      await connection.beginTransaction();
+      const session = await findSessionByIdentifier(connection, req.params.sessionIdentifier);
+
+      if (!session || !session.stream_id) {
+        await connection.rollback();
+        return res.status(404).json({ message: "Session stream was not found." });
+      }
+
+      if (!["Active", "Paused"].includes(String(session.status))) {
+        await connection.rollback();
+        return res.status(409).json({ message: "Bets can only be placed on active or paused sessions." });
+      }
+
+      const [result] = await connection.execute(
+        `INSERT INTO bet (
+           session_id,
+           stream_id,
+           player_id,
+           viewer_identifier,
+           bet_type,
+           predicted_value,
+           bet_amount
+         )
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [session.session_id, session.stream_id, playerId, viewerIdentifier, betType, predictedValue, betAmount]
+      );
+
+      await connection.commit();
+      return res.status(201).json({
+        betId: Number(result.insertId),
+        sessionId: Number(session.session_id),
+        streamId: Number(session.stream_id),
+        playerId,
+        viewerIdentifier,
+        betType,
+        predictedValue,
+        betAmount
+      });
+    } catch (error) {
+      await connection.rollback();
+      return res.status(500).json({
+        message: "Failed to place bet.",
+        error: error.message
+      });
+    } finally {
+      connection.release();
+    }
+  }
+);
+
+liveStreamingPaymentBettingRouter.post(
+  "/sessions/:sessionIdentifier/bets/settle",
+  ...requireBetAdmin,
+  async (req, res) => {
+    const managerId = Number(req.body?.managerId);
+    const actualWinnerPlayerId = asPositiveInteger(req.body?.actualWinnerPlayerId);
+    const connection = await pool.getConnection();
+
+    if (!actualWinnerPlayerId) {
+      return res.status(400).json({ message: "actualWinnerPlayerId must be a positive integer." });
+    }
+
+    try {
+      await connection.beginTransaction();
+      const session = await findSessionByIdentifier(connection, req.params.sessionIdentifier);
+
+      if (!session || !session.stream_id) {
+        await connection.rollback();
+        return res.status(404).json({ message: "Session stream was not found." });
+      }
+
+      const [pendingRows] = await connection.execute(
+        `SELECT
+           bet_id,
+           bet_type,
+           predicted_value
+         FROM bet
+         WHERE session_id = ? AND bet_status = 'Pending'`,
+        [session.session_id]
+      );
+
+      for (const bet of pendingRows) {
+        const predicted = String(bet.predicted_value ?? "").trim();
+        const won = (
+          String(bet.bet_type) === "FinalWinner" &&
+          predicted === String(actualWinnerPlayerId)
+        );
+
+        await connection.execute(
+          `UPDATE bet
+           SET actual_value = ?,
+               bet_status = ?,
+               settled_at = NOW()
+           WHERE bet_id = ?`,
+          [String(actualWinnerPlayerId), won ? "Won" : "Lost", bet.bet_id]
+        );
+      }
+
+      await connection.execute(
+        `INSERT INTO audit_log (
+           manager_id,
+           session_id,
+           action_type,
+           details_json
+         )
+         VALUES (?, ?, 'SETTLE_BETS', ?)`,
+        [
+          managerId,
+          session.session_id,
+          JSON.stringify({
+            settledCount: pendingRows.length,
+            actualWinnerPlayerId
+          })
+        ]
+      );
+
+      await connection.commit();
+      return res.json({
+        sessionId: Number(session.session_id),
+        settledCount: pendingRows.length,
+        actualWinnerPlayerId
+      });
+    } catch (error) {
+      await connection.rollback();
+      return res.status(500).json({
+        message: "Failed to settle bets.",
+        error: error.message
+      });
+    } finally {
+      connection.release();
+    }
+  }
+);
+
+liveStreamingPaymentBettingRouter.post(
+  "/sessions/:sessionIdentifier/bets/cancel-pending",
+  ...requireBetAdmin,
+  async (req, res) => {
+    const managerId = Number(req.body?.managerId);
+    const reason = String(req.body?.reason ?? "Session cancelled before settlement");
+    const connection = await pool.getConnection();
+
+    try {
+      await connection.beginTransaction();
+      const session = await findSessionByIdentifier(connection, req.params.sessionIdentifier);
+
+      if (!session) {
+        await connection.rollback();
+        return res.status(404).json({ message: "Session was not found." });
+      }
+
+      const [updateResult] = await connection.execute(
+        `UPDATE bet
+         SET bet_status = 'Cancelled',
+             actual_value = ?,
+             settled_at = NOW()
+         WHERE session_id = ?
+           AND bet_status = 'Pending'`,
+        [reason, session.session_id]
+      );
+
+      await connection.execute(
+        `INSERT INTO audit_log (
+           manager_id,
+           session_id,
+           action_type,
+           details_json
+         )
+         VALUES (?, ?, 'CANCEL_PENDING_BETS', ?)`,
+        [
+          managerId,
+          session.session_id,
+          JSON.stringify({
+            cancelledCount: Number(updateResult.affectedRows),
+            reason
+          })
+        ]
+      );
+
+      await connection.commit();
+      return res.json({
+        sessionId: Number(session.session_id),
+        cancelledCount: Number(updateResult.affectedRows),
+        reason
+      });
+    } catch (error) {
+      await connection.rollback();
+      return res.status(500).json({
+        message: "Failed to cancel pending bets.",
+        error: error.message
+      });
+    } finally {
+      connection.release();
+    }
+  }
+);

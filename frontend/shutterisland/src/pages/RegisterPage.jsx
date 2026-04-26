@@ -28,7 +28,7 @@ function RegisterPage() {
       return;
     }
 
-    setStatus("Registration request staged. Connect this form to the auth API when account creation is ready.");
+    setStatus("Self-service registration is currently unavailable. Please contact an administrator to create your account.");
   };
 
   return (

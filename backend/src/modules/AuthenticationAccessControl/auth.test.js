@@ -375,6 +375,159 @@ describe("AuthenticationAccessControl routes", () => {
     assert.equal(response.body.message, "Invalid or expired token.");
   });
 
+  it("protects session-administration read routes behind staff/admin RBAC", async () => {
+    const response = await request("/api/session-administration/sessions");
+
+    assert.equal(response.status, 401);
+    assert.equal(response.body.message, "Bearer token is required.");
+  });
+
+  it("protects monitoring routes behind staff/admin RBAC", async () => {
+    const response = await request("/api/admin/dashboard/overview");
+
+    assert.equal(response.status, 401);
+    assert.equal(response.body.message, "Bearer token is required.");
+  });
+
+  it("protects live metrics route behind authenticated actor access", async () => {
+    const response = await request("/api/sessions/SES-102/live");
+
+    assert.equal(response.status, 401);
+    assert.equal(response.body.message, "Bearer token is required.");
+  });
+
+  it("rejects malformed query-token authentication on the admin SSE stream", async () => {
+    const response = await request("/api/admin/stream?access_token=malformed-token");
+
+    assert.equal(response.status, 401);
+    assert.equal(response.body.message, "Invalid or expired token.");
+  });
+
+  it("protects session-management writes behind staff/admin authentication", async () => {
+    const response = await request("/api/session-administration/sessions/1/participants", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        displayName: "Test Player",
+        slotNumber: 1
+      })
+    });
+
+    assert.equal(response.status, 401);
+    assert.equal(response.body.message, "Bearer token is required.");
+  });
+
+  it("protects participant check-in route behind staff/admin authentication", async () => {
+    const response = await request("/api/session-administration/sessions/1/participants/3/check-in", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+
+    assert.equal(response.status, 401);
+    assert.equal(response.body.message, "Bearer token is required.");
+  });
+
+  it("protects arena endpoints behind game-state read permissions", async () => {
+    const currentResponse = await request("/api/arena/current");
+    const markersResponse = await request("/api/arena/current/markers");
+    const obstaclesResponse = await request("/api/arena/current/obstacles");
+
+    assert.equal(currentResponse.status, 401);
+    assert.equal(currentResponse.body.message, "Bearer token is required.");
+    assert.equal(markersResponse.status, 401);
+    assert.equal(markersResponse.body.message, "Bearer token is required.");
+    assert.equal(obstaclesResponse.status, 401);
+    assert.equal(obstaclesResponse.body.message, "Bearer token is required.");
+  });
+
+  it("protects viewer-access-key management routes behind staff/admin authentication", async () => {
+    const issueResponse = await request("/api/sessions/SES-102/viewer-access-keys", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        viewerIdentifier: "viewer-test@example.com"
+      })
+    });
+
+    const revokeResponse = await request("/api/sessions/SES-102/viewer-access-keys/1/revoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+
+    assert.equal(issueResponse.status, 401);
+    assert.equal(issueResponse.body.message, "Bearer token is required.");
+    assert.equal(revokeResponse.status, 401);
+    assert.equal(revokeResponse.body.message, "Bearer token is required.");
+  });
+
+  it("enforces viewer-only authentication for bet placement", async () => {
+    const { token } = createAuthToken({
+      actorType: "staff",
+      managerId: 1,
+      username: "admin_nour",
+      role: "Administrator"
+    });
+
+    const response = await request("/api/sessions/SES-102/bets", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        betType: "FinalWinner",
+        predictedValue: "6",
+        betAmount: 20
+      })
+    });
+
+    assert.equal(response.status, 401);
+    assert.equal(response.body.message, "Invalid or expired token.");
+  });
+
+  it("protects bet settlement and cancellation routes behind staff/admin authentication", async () => {
+    const settleResponse = await request("/api/sessions/SES-102/bets/settle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ actualWinnerPlayerId: 6 })
+    });
+
+    const cancelResponse = await request("/api/sessions/SES-102/bets/cancel-pending", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: "cancelled" })
+    });
+
+    assert.equal(settleResponse.status, 401);
+    assert.equal(settleResponse.body.message, "Bearer token is required.");
+    assert.equal(cancelResponse.status, 401);
+    assert.equal(cancelResponse.body.message, "Bearer token is required.");
+  });
+
+  it("rejects viewer actor tokens on session and monitoring staff routes", async () => {
+    const { token } = createAuthToken({
+      actorType: "viewer",
+      accessId: 3,
+      streamId: 2,
+      sessionId: 2,
+      viewerIdentifier: "viewer3@example.com"
+    });
+
+    const sessionResponse = await request("/api/session-administration/sessions", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const monitoringResponse = await request("/api/admin/reports/session-performance", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    assert.equal(sessionResponse.status, 401);
+    assert.equal(sessionResponse.body.message, "Invalid or expired token.");
+    assert.equal(monitoringResponse.status, 401);
+    assert.equal(monitoringResponse.body.message, "Invalid or expired token.");
+  });
+
   it("overwrites client-supplied managerId with the authenticated staff id", () => {
     const req = {
       staff: { id: 42 },

@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import styles from "./AdminDashboard.module.css";
 import { useAdminRealtime } from "../hooks/useAdminRealtime";
+import { getAuthHeaders } from "../lib/auth";
 
 const API_BASE = import.meta.env?.VITE_API_URL ?? "http://localhost:4000";
 
@@ -107,7 +108,11 @@ function formatAxisLabel(value) {
 
 async function apiGet(path, fallback) {
   try {
-    const res = await fetch(`${API_BASE}${path}`);
+    const res = await fetch(`${API_BASE}${path}`, {
+      headers: {
+        ...getAuthHeaders()
+      }
+    });
     if (!res.ok) throw new Error(`${res.status}`);
     return await res.json();
   } catch {
@@ -116,7 +121,12 @@ async function apiGet(path, fallback) {
 }
 
 async function apiPost(path) {
-  const res = await fetch(`${API_BASE}${path}`, { method: "POST" });
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: {
+      ...getAuthHeaders()
+    }
+  });
   if (!res.ok) throw new Error(`${res.status}`);
   return res.json();
 }

@@ -13,6 +13,9 @@ TRUNCATE TABLE elimination;
 TRUNCATE TABLE session_room_player;
 TRUNCATE TABLE session_room;
 TRUNCATE TABLE session_player;
+TRUNCATE TABLE arena_obstacle;
+TRUNCATE TABLE arena_marker;
+TRUNCATE TABLE arena_zone;
 TRUNCATE TABLE room;
 TRUNCATE TABLE game_session;
 TRUNCATE TABLE player;
@@ -94,6 +97,32 @@ INSERT INTO room (room_id, name, description, difficulty_level, sequence_order, 
 (3, 'Trust Trial',     'Cooperative challenge requiring synchronized actions',            3, 3, 480, 'Insufficient team coordination'),
 (4, 'Red Chamber',     'High-pressure reaction room with triggered hazards',              4, 4, 360, 'Hazard exposure or incorrect sequence'),
 (5, 'Final Corridor',  'Last room before winner determination',                           5, 5, 600, 'Only one may remain to finish');
+
+-- =========================
+-- 3.1) Arena Zones / Markers / Obstacles
+-- =========================
+INSERT INTO arena_zone (zone_id, zone_code, zone_name, center_x, center_y, radius, is_active) VALUES
+(1, 'ENTRY',    'Entry Gate',      20.00, 16.00, 9.00, 1),
+(2, 'MIRROR',   'Mirror Hall',     40.00, 24.00, 10.00, 1),
+(3, 'TRUST',    'Trust Trial',     60.00, 36.00, 11.00, 1),
+(4, 'CHAMBER',  'Red Chamber',     80.00, 50.00, 12.00, 1),
+(5, 'FINAL',    'Final Corridor', 100.00, 64.00, 13.00, 1);
+
+INSERT INTO arena_marker (marker_id, zone_id, marker_code, marker_name, coord_x, coord_y, label_color) VALUES
+(1, 1, 'MK-ENTRY-START',  'Start Point',   18.00, 14.50, '#F2D0A4'),
+(2, 2, 'MK-MIRROR-PUZZ',  'Puzzle Node',   38.00, 23.00, '#A2CE9C'),
+(3, 3, 'MK-TRUST-SYNC',   'Sync Trigger',  59.50, 35.50, '#A4303F'),
+(4, 4, 'MK-CHAMBER-ALRT', 'Hazard Beacon', 81.00, 49.00, '#A4303F'),
+(5, 5, 'MK-FINAL-EXIT',   'Exit Gate',     99.00, 65.00, '#F2D0A4');
+
+INSERT INTO arena_obstacle (
+  obstacle_id, zone_id, obstacle_code, obstacle_name, coord_x, coord_y, width_units, height_units
+) VALUES
+(1, 1, 'OBS-ENTRY-WALL',  'Entry Block',      22.00, 16.00, 2.00, 1.50),
+(2, 2, 'OBS-MIRROR-PILL', 'Mirror Pillar',    42.00, 25.00, 2.50, 2.00),
+(3, 3, 'OBS-TRUST-GATE',  'Trust Gate',       62.00, 37.00, 3.00, 2.20),
+(4, 4, 'OBS-CHAMBER-TRP', 'Chamber Trapdoor', 82.00, 51.00, 2.00, 1.80),
+(5, 5, 'OBS-FINAL-LOCK',  'Final Lock',      101.00, 64.00, 2.80, 2.40);
 
 -- =========================
 -- 4) Challenges

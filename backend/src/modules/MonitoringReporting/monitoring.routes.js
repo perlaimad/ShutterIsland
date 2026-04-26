@@ -1,8 +1,32 @@
 import { Router } from "express";
 import { pool } from "../../config/db.js";
 import { publishAdminEvent, subscribeAdminStream } from "../../common/realtime/sse.js";
+import {
+  attachAuthenticatedManager,
+  authenticateStaff,
+  authorizeAnyPermission
+} from "../AuthenticationAccessControl/auth.middleware.js";
+import { AUTH_PERMISSIONS } from "../AuthenticationAccessControl/access-control.js";
 
 export const monitoringReportingRouter = Router();
+
+const requireMonitoringRead = [
+  authenticateStaff,
+  authorizeAnyPermission(
+    AUTH_PERMISSIONS.MONITORING_READ,
+    AUTH_PERMISSIONS.REPORT_READ,
+    AUTH_PERMISSIONS.SESSION_READ
+  )
+];
+
+const requireMonitoringManage = [
+  authenticateStaff,
+  authorizeAnyPermission(
+    AUTH_PERMISSIONS.SESSION_MANAGE,
+    AUTH_PERMISSIONS.SYSTEM_ADMIN
+  ),
+  attachAuthenticatedManager
+];
 
 const asPositiveInteger = (value) => {
   const parsed = Number(value);
@@ -52,11 +76,11 @@ const getElapsedSeconds = (startedAt, eventAt) => {
   return Math.max(0, Math.floor((eventTime - start) / 1000));
 };
 
-monitoringReportingRouter.get("/admin/stream", (req, res) => {
+monitoringReportingRouter.get("/admin/stream", ...requireMonitoringRead, (req, res) => {
   subscribeAdminStream(req, res);
 });
 
-monitoringReportingRouter.get("/sessions/:sessionIdentifier/eliminations", async (req, res) => {
+monitoringReportingRouter.get("/sessions/:sessionIdentifier/eliminations", ...requireMonitoringRead, async (req, res) => {
   const connection = await pool.getConnection();
 
   try {
@@ -125,7 +149,7 @@ monitoringReportingRouter.get("/sessions/:sessionIdentifier/eliminations", async
   }
 });
 
-monitoringReportingRouter.get("/sessions/:sessionIdentifier/positions/latest", async (req, res) => {
+monitoringReportingRouter.get("/sessions/:sessionIdentifier/positions/latest", ...requireMonitoringRead, async (req, res) => {
   const connection = await pool.getConnection();
 
   try {
@@ -225,7 +249,7 @@ monitoringReportingRouter.get("/sessions/:sessionIdentifier/positions/latest", a
   }
 });
 
-monitoringReportingRouter.get("/admin/dashboard/overview", async (req, res) => {
+monitoringReportingRouter.get("/admin/dashboard/overview", ...requireMonitoringRead, async (req, res) => {
   try {
     const [activeSessionsRows] = await pool.query(`
       SELECT COUNT(*) AS count
@@ -269,7 +293,7 @@ monitoringReportingRouter.get("/admin/dashboard/overview", async (req, res) => {
 });
 
 // GET active sessions
-monitoringReportingRouter.get("/admin/dashboard/sessions", async (req, res) => {
+monitoringReportingRouter.get("/admin/dashboard/sessions", ...requireMonitoringRead, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT
@@ -325,7 +349,7 @@ monitoringReportingRouter.get("/admin/dashboard/sessions", async (req, res) => {
 });
 
 // GET participant statuses
-monitoringReportingRouter.get("/admin/dashboard/participants", async (req, res) => {
+monitoringReportingRouter.get("/admin/dashboard/participants", ...requireMonitoringRead, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT
@@ -364,7 +388,7 @@ monitoringReportingRouter.get("/admin/dashboard/participants", async (req, res) 
   }
 });
 
-monitoringReportingRouter.get("/admin/reports/session-performance", async (req, res) => {
+monitoringReportingRouter.get("/admin/reports/session-performance", ...requireMonitoringRead, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT
@@ -414,7 +438,7 @@ monitoringReportingRouter.get("/admin/reports/session-performance", async (req, 
   }
 });
 
-monitoringReportingRouter.get("/admin/reports/participant-summary", async (req, res) => {
+monitoringReportingRouter.get("/admin/reports/participant-summary", ...requireMonitoringRead, async (req, res) => {
   try {
     const [totalsRows] = await pool.query(`
       SELECT
@@ -458,7 +482,7 @@ monitoringReportingRouter.get("/admin/reports/participant-summary", async (req, 
   }
 });
 
-monitoringReportingRouter.post("/admin/logs/audit", async (req, res) => {
+monitoringReportingRouter.post("/admin/logs/audit", ...requireMonitoringManage, async (req, res) => {
   try {
     const { managerId, sessionId = null, actionType, details } = req.body;
 
@@ -506,7 +530,7 @@ monitoringReportingRouter.post("/admin/logs/audit", async (req, res) => {
   }
 });
 
-monitoringReportingRouter.get("/admin/logs/audit", async (req, res) => {
+monitoringReportingRouter.get("/admin/logs/audit", ...requireMonitoringRead, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT
@@ -544,7 +568,7 @@ monitoringReportingRouter.get("/admin/logs/audit", async (req, res) => {
   }
 });
 
-monitoringReportingRouter.get("/admin/reports/session-events", async (req, res) => {
+monitoringReportingRouter.get("/admin/reports/session-events", ...requireMonitoringRead, async (req, res) => {
   try {
     const { sessionId } = req.query;
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { loadAuthSession } from "../lib/auth";
 
 const API_BASE = import.meta.env?.VITE_API_URL ?? "http://localhost:4000";
 
@@ -15,6 +16,11 @@ export function useAdminRealtime({ sessionId = null, enabled = true, onUpdate })
     }
 
     const streamUrl = new URL(`${API_BASE}/api/admin/stream`);
+    const auth = loadAuthSession();
+
+    if (auth?.token) {
+      streamUrl.searchParams.set("access_token", auth.token);
+    }
 
     if (sessionId) {
       streamUrl.searchParams.set("sessionId", String(sessionId));

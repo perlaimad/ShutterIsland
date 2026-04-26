@@ -9,6 +9,9 @@ import {
   assignFinalRankings,
   detectFinishConditions,
   eliminateParticipant,
+  getArenaCurrent,
+  getArenaMarkers,
+  getArenaObstacles,
   getChallengeSequence,
   getEliminations,
   getFinalRankings,
@@ -112,6 +115,35 @@ const handleChallengeAction = (action) => async (req, res) => {
     });
   }
 };
+
+const handleArenaAction = (action, fallbackMessage) => async (_req, res) => {
+  try {
+    const result = await action();
+    return res.json(result);
+  } catch (error) {
+    return res.status(error.statusCode ?? 500).json({
+      message: error.message ?? fallbackMessage
+    });
+  }
+};
+
+gameManagementRouter.get(
+  "/arena/current",
+  requireGameStateRead,
+  handleArenaAction(() => getArenaCurrent(), "Failed to load arena.")
+);
+
+gameManagementRouter.get(
+  "/arena/current/markers",
+  requireGameStateRead,
+  handleArenaAction(() => getArenaMarkers(), "Failed to load arena markers.")
+);
+
+gameManagementRouter.get(
+  "/arena/current/obstacles",
+  requireGameStateRead,
+  handleArenaAction(() => getArenaObstacles(), "Failed to load arena obstacles.")
+);
 
 gameManagementRouter.get(
   "/game-management/sessions/:sessionId/timer",

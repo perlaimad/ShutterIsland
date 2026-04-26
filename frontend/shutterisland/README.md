@@ -1,16 +1,35 @@
-# React + Vite
+# ShutterIsland Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend for ShutterIsland pages:
 
-Currently, two official plugins are available:
+- Home (`/`)
+- Sessions (`/sessions`)
+- Session details (`/sessions/:id`)
+- Admin dashboard (`/dashboard`)
+- Login (`/login`)
+- Register (`/register`)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Scripts
+- `npm run dev`: start Vite dev server.
+- `npm test`: run Vitest unit/component test suite.
+- `npm run test:watch`: run Vitest in watch mode.
+- `npm run e2e`: run Playwright end-to-end suite.
+- `npm run e2e:headed`: run Playwright in headed mode.
+- `npm run lint`: run ESLint.
+- `npm run build`: create production build.
+- `npm run preview`: preview production build.
 
-## React Compiler
+## Environment
+- `VITE_API_URL`: backend base URL (default `http://localhost:4000`).
+- `VITE_API_BASE_URL`: optional API base override used by the sessions page.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Auth Storage
+The login page stores auth session data in local storage under:
+- `shutterisland-auth`
 
-## Expanding the ESLint configuration
+Pages use this stored token for authenticated API requests and realtime admin stream updates.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Notes
+- Some pages keep fallback/mock states to avoid blank screens when API requests fail.
+- Register page is currently informational; account creation is still admin-managed.
+- Playwright workflows are gated behind `RUN_E2E=1` and expect local frontend/backend services.
