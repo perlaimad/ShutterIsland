@@ -14,6 +14,7 @@ import {
   normalizeOptionalViewerIdentifier,
   normalizePassword,
   normalizeStaffIdentifier,
+  normalizeStaffRegistration,
   normalizeViewerAccessKey
 } from "./auth.validation.js";
 
@@ -149,6 +150,34 @@ describe("AuthenticationAccessControl validation", () => {
     assert.throws(() => normalizePassword("x".repeat(129)), /Password is too long/);
   });
 
+  it("validates staff registration input", () => {
+    assert.deepEqual(
+      normalizeStaffRegistration({
+        username: " new_staff ",
+        email: "NEW.STAFF@SHUTTERISLAND.COM",
+        password: "Staff123!"
+      }),
+      {
+        username: "new_staff",
+        email: "new.staff@shutterisland.com",
+        password: "Staff123!"
+      }
+    );
+
+    assert.throws(
+      () => normalizeStaffRegistration({ username: "ab", email: "staff@example.com", password: "Staff123!" }),
+      /Username must be 3-64 characters/
+    );
+    assert.throws(
+      () => normalizeStaffRegistration({ username: "staff_user", email: "bad-email", password: "Staff123!" }),
+      /Email must be a valid email address/
+    );
+    assert.throws(
+      () => normalizeStaffRegistration({ username: "staff_user", email: "staff@example.com", password: "short" }),
+      /Password must be at least 8 characters/
+    );
+  });
+
   it("accepts Phase III viewer access key format", () => {
     assert.equal(normalizeViewerAccessKey(" KEY-SES102-B1 "), "KEY-SES102-B1");
   });
@@ -177,6 +206,17 @@ describe("AuthenticationAccessControl validation", () => {
 
 describe("AuthenticationAccessControl routes", () => {
   it("returns 400 when staff login credentials are missing", async () => {
+    const response = await request("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.message, "Identifier and password are required.");
+  });
+
+  it("keeps the staff-specific login route available", async () => {
     const response = await request("/api/auth/staff/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -185,6 +225,43 @@ describe("AuthenticationAccessControl routes", () => {
 
     assert.equal(response.status, 400);
     assert.equal(response.body.message, "Identifier and password are required.");
+  });
+
+  it("returns 400 when staff registration input is missing", async () => {
+    const response = await request("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.message, "Username, email, and password are required.");
+  });
+
+  it("keeps the staff-specific registration route available", async () => {
+    const response = await request("/api/auth/staff/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.message, "Username, email, and password are required.");
+  });
+
+  it("returns 400 when staff registration password is too short", async () => {
+    const response = await request("/api/auth/staff/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: "new_staff",
+        email: "new.staff@shutterisland.com",
+        password: "short"
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.message, "Password must be at least 8 characters.");
   });
 
   it("requires a bearer token for the staff profile route", async () => {
@@ -337,6 +414,36 @@ describe("AuthenticationAccessControl routes", () => {
 
   it("protects game-management routes behind staff/admin RBAC", async () => {
     const response = await request("/api/game-management/sessions/1/timer");
+
+    assert.equal(response.status, 401);
+    assert.equal(response.body.message, "Bearer token is required.");
+  });
+
+  it("protects session-administration reads behind staff/admin RBAC", async () => {
+    const response = await request("/api/session-administration/sessions/1");
+
+    assert.equal(response.status, 401);
+    assert.equal(response.body.message, "Bearer token is required.");
+  });
+
+  it("validates the public sessions month filter before querying", async () => {
+    const response = await request("/api/sessions?month=bad-month");
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.message, "month must use YYYY-MM format.");
+  });
+
+  it("protects session-administration writes behind staff/admin RBAC", async () => {
+    const response = await request("/api/session-administration/sessions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        createdByManagerId: 999,
+        sessionCode: "SES-NEW",
+        minPlayers: 3,
+        maxPlayers: 7
+      })
+    });
 
     assert.equal(response.status, 401);
     assert.equal(response.body.message, "Bearer token is required.");

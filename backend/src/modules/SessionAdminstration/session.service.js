@@ -119,6 +119,42 @@ export const getSessionById = async (sessionId) => {
   return row ? mapSession(row) : null;
 };
 
+export const listSessions = async ({ month } = {}) => {
+  const filters = [];
+  const values = [];
+
+  if (month !== undefined) {
+    if (typeof month !== "string" || !/^\d{4}-\d{2}$/.test(month)) {
+      throw createHttpError("month must use YYYY-MM format.", 400);
+    }
+
+    filters.push("DATE_FORMAT(created_at, '%Y-%m') = ?");
+    values.push(month);
+  }
+
+  const whereClause = filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
+  const [rows] = await pool.execute(
+    `SELECT
+       session_id,
+       session_code,
+       created_by_manager_id,
+       min_players,
+       max_players,
+       status,
+       created_at,
+       started_at,
+       ended_at,
+       timer_status,
+       timer_duration_seconds
+     FROM game_session
+     ${whereClause}
+     ORDER BY created_at DESC, session_id DESC`,
+    values
+  );
+
+  return rows.map(mapSession);
+};
+
 export const createSession = async (input = {}) => {
   const createdByManagerId = asPositiveInteger(input.createdByManagerId);
   const minPlayers = asPositiveInteger(input.minPlayers);

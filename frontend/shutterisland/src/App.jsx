@@ -6,6 +6,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import SessionDetailsPage from "./pages/SessionDetailsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import { useAuth } from "./context/AuthContext";
 
 const HOME_TICKER_ITEMS = homepageData.tickerMessages.map((message) =>
   message.replace("{minutes}", "4"),
@@ -55,6 +56,18 @@ const REGISTER_TICKER_ITEMS = [
   "ARENA ACCOUNT REQUEST",
 ];
 
+function RequireAuth({ children }) {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    const redirectTo = encodeURIComponent(`${window.location.pathname}${window.location.search}`);
+    window.history.replaceState(null, "", `/login?redirect=${redirectTo}`);
+    return <LoginPage />;
+  }
+
+  return children;
+}
+
 function resolvePage(pathname) {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
 
@@ -90,7 +103,11 @@ function resolvePage(pathname) {
           playersActive: "—",
           round: "—",
         },
-        render: () => <AdminDashboard />,
+        render: () => (
+          <RequireAuth>
+            <AdminDashboard />
+          </RequireAuth>
+        ),
       };
 
     case "/login":

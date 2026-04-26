@@ -1,6 +1,7 @@
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_PATTERN = /^[A-Za-z0-9_.-]{3,64}$/;
 const ACCESS_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{7,119}$/;
+const MIN_PASSWORD_LENGTH = 8;
 
 const createValidationError = (message) => {
   const error = new Error(message);
@@ -42,6 +43,39 @@ export const normalizePassword = (password) => {
   }
 
   return password;
+};
+
+export const normalizeStaffRegistration = ({ username, email, password }) => {
+  const normalizedUsername = String(username ?? "").trim();
+  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+
+  if (!normalizedUsername || !normalizedEmail || typeof password !== "string" || !password) {
+    throw createValidationError("Username, email, and password are required.");
+  }
+
+  if (!USERNAME_PATTERN.test(normalizedUsername)) {
+    throw createValidationError(
+      "Username must be 3-64 characters and contain only letters, numbers, dots, underscores, or hyphens."
+    );
+  }
+
+  if (!EMAIL_PATTERN.test(normalizedEmail)) {
+    throw createValidationError("Email must be a valid email address.");
+  }
+
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    throw createValidationError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+  }
+
+  if (password.length > 128) {
+    throw createValidationError("Password is too long.");
+  }
+
+  return {
+    username: normalizedUsername,
+    email: normalizedEmail,
+    password
+  };
 };
 
 export const normalizeViewerAccessKey = (accessKey) => {

@@ -3,7 +3,11 @@ import bcrypt from "bcryptjs";
 import { pool } from "../../config/db.js";
 import { AUTH_ROLES, getPermissionsForRole } from "./access-control.js";
 import { createAuthToken } from "./auth.tokens.js";
-import { normalizePassword, normalizeStaffIdentifier } from "./auth.validation.js";
+import {
+  normalizePassword,
+  normalizeStaffIdentifier,
+  normalizeStaffRegistration
+} from "./auth.validation.js";
 
 const INTERNAL_ROLES = [AUTH_ROLES.ADMINISTRATOR, AUTH_ROLES.STAFF];
 const ACTIVE_STATUS = "Active";
@@ -72,6 +76,58 @@ const verifyPassword = async (password, storedHash) => {
   return false;
 };
 
+const createHttpError = (message, statusCode = 400) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+};
+
+const issueStaffSession = (staff) => {
+  const publicStaff = publicStaffFields(staff);
+  const token = createAuthToken({
+    actorType: "staff",
+    managerId: staff.manager_id,
+    username: staff.username,
+    role: staff.role
+  });
+
+  return {
+    staff: publicStaff,
+    token: token.token,
+    tokenType: "Bearer",
+    expiresAt: token.expiresAt
+  };
+};
+
+export const registerStaff = async (input) => {
+  const { username, email, password } = normalizeStaffRegistration(input ?? {});
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  try {
+    const [result] = await pool.execute(
+      `INSERT INTO manager (username, email, password_hash, role, status)
+       VALUES (?, ?, ?, ?, ?)`,
+      [username, email, passwordHash, AUTH_ROLES.STAFF, ACTIVE_STATUS]
+    );
+
+    const [rows] = await pool.execute(
+      `SELECT manager_id, username, email, role, status, created_at, last_login_at
+       FROM manager
+       WHERE manager_id = ?
+       LIMIT 1`,
+      [result.insertId]
+    );
+
+    return issueStaffSession(rows[0]);
+  } catch (error) {
+    if (error?.code === "ER_DUP_ENTRY" || error?.errno === 1062) {
+      throw createHttpError("Username or email is already registered.", 409);
+    }
+
+    throw error;
+  }
+};
+
 export const loginStaff = async ({ identifier, password }) => {
   const normalizedIdentifier = normalizeStaffIdentifier(identifier);
   const normalizedPassword = normalizePassword(password);
@@ -110,20 +166,7 @@ export const loginStaff = async ({ identifier, password }) => {
     [staff.manager_id]
   );
 
-  const publicStaff = publicStaffFields(updatedRows[0] ?? staff);
-  const token = createAuthToken({
-    actorType: "staff",
-    managerId: staff.manager_id,
-    username: staff.username,
-    role: staff.role
-  });
-
-  return {
-    staff: publicStaff,
-    token: token.token,
-    tokenType: "Bearer",
-    expiresAt: token.expiresAt
-  };
+  return issueStaffSession(updatedRows[0] ?? staff);
 };
 
 export const getStaffById = async (managerId) => {

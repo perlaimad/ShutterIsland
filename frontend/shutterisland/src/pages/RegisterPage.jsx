@@ -1,16 +1,19 @@
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import styles from "./LoginPage.module.css";
 
 function RegisterPage() {
+  const { register, logout } = useAuth();
   const [account, setAccount] = useState({
-    name: "",
+    accountType: "admin",
+    username: "",
     email: "",
-    role: "viewer",
     password: "",
     confirmPassword: "",
     terms: false,
   });
   const [status, setStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (event) => {
     const { name, type, checked, value } = event.target;
@@ -20,7 +23,7 @@ function RegisterPage() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (account.password !== account.confirmPassword) {
@@ -28,7 +31,28 @@ function RegisterPage() {
       return;
     }
 
-    setStatus("Registration request staged. Connect this form to the auth API when account creation is ready.");
+    setIsSubmitting(true);
+    setStatus("");
+
+    try {
+      if (account.accountType === "viewer") {
+        logout();
+        window.location.href = "/";
+        return;
+      }
+
+      await register({
+        username: account.username,
+        email: account.email,
+        password: account.password,
+      });
+
+      window.location.href = "/dashboard";
+    } catch (error) {
+      setStatus(error?.message ?? "Registration failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -47,7 +71,7 @@ function RegisterPage() {
             Register
           </h1>
           <p className={styles.copy}>
-            Create an account as an admin, manager, or viewer to access the tools assigned to your role.
+            Admin accounts can access operator tools. Viewer accounts return to the public home experience.
           </p>
         </div>
 
@@ -58,15 +82,28 @@ function RegisterPage() {
           </div>
 
           <label className={styles.field}>
-            <span>Full Name</span>
+            <span>Account Type</span>
+            <select
+              name="accountType"
+              value={account.accountType}
+              onChange={handleChange}
+              required
+            >
+              <option value="admin">Admin</option>
+              <option value="viewer">Viewer</option>
+            </select>
+          </label>
+
+          <label className={styles.field}>
+            <span>Username</span>
             <input
               type="text"
-              name="name"
-              value={account.name}
+              name="username"
+              value={account.username}
               onChange={handleChange}
-              autoComplete="name"
-              placeholder="Enter your name"
-              required
+              autoComplete="username"
+              placeholder="new_staff"
+              required={account.accountType === "admin"}
             />
           </label>
 
@@ -79,22 +116,8 @@ function RegisterPage() {
               onChange={handleChange}
               autoComplete="email"
               placeholder="test@gmail.com"
-              required
+              required={account.accountType === "admin"}
             />
-          </label>
-
-          <label className={styles.field}>
-            <span>Role</span>
-            <select
-              name="role"
-              value={account.role}
-              onChange={handleChange}
-              required
-            >
-              <option value="viewer">Viewer</option>
-              <option value="manager">Manager</option>
-              <option value="admin">Admin</option>
-            </select>
           </label>
 
           <label className={styles.field}>
@@ -106,7 +129,7 @@ function RegisterPage() {
               onChange={handleChange}
               autoComplete="new-password"
               placeholder="Create access phrase"
-              required
+              required={account.accountType === "admin"}
             />
           </label>
 
@@ -119,7 +142,7 @@ function RegisterPage() {
               onChange={handleChange}
               autoComplete="new-password"
               placeholder="Repeat access phrase"
-              required
+              required={account.accountType === "admin"}
             />
           </label>
 
@@ -136,8 +159,8 @@ function RegisterPage() {
             </label>
           </div>
 
-          <button type="submit" className={styles.submitButton}>
-            Create Account
+          <button type="submit" className={styles.submitButton} disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Account"}
           </button>
 
           <p className={styles.switchPrompt}>

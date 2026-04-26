@@ -1,12 +1,31 @@
 import { Router } from "express";
 import { authenticateStaff, authenticateViewer } from "./auth.middleware.js";
-import { loginStaff } from "./auth.service.js";
+import { loginStaff, registerStaff } from "./auth.service.js";
 import { loginViewer } from "./viewer.service.js";
 import { AUTH_PERMISSIONS, AUTH_ROLES, ROLE_PERMISSIONS } from "./access-control.js";
 
 export const authenticationAccessControlRouter = Router();
 
-authenticationAccessControlRouter.post("/auth/staff/login", async (req, res) => {
+const handleStaffRegistration = async (req, res) => {
+  try {
+    const result = await registerStaff({
+      username: req.body?.username,
+      email: req.body?.email,
+      password: req.body?.password
+    });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    return res.status(error.statusCode ?? 500).json({
+      message: error.message ?? "Staff registration failed."
+    });
+  }
+};
+
+authenticationAccessControlRouter.post("/auth/register", handleStaffRegistration);
+authenticationAccessControlRouter.post("/auth/staff/register", handleStaffRegistration);
+
+const handleStaffLogin = async (req, res) => {
   try {
     const result = await loginStaff({
       identifier: req.body?.identifier ?? req.body?.username ?? req.body?.email,
@@ -19,7 +38,10 @@ authenticationAccessControlRouter.post("/auth/staff/login", async (req, res) => 
       message: error.message ?? "Staff login failed."
     });
   }
-});
+};
+
+authenticationAccessControlRouter.post("/auth/login", handleStaffLogin);
+authenticationAccessControlRouter.post("/auth/staff/login", handleStaffLogin);
 
 authenticationAccessControlRouter.get("/auth/staff/me", authenticateStaff, (req, res) => {
   res.json({ staff: req.staff });

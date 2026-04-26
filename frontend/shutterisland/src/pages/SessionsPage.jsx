@@ -14,6 +14,7 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useAuth } from "../context/AuthContext";
 
 /* ============================================================
    1. CONFIGURATION
@@ -221,8 +222,8 @@ const sessionsService = {
     }
   },
 
-  async createSession(payload) {
-    const response = await fetch(`${API_BASE_URL}/session-administration/sessions`, {
+  async createSession(payload, authFetch) {
+    const response = await authFetch(`${API_BASE_URL}/session-administration/sessions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -1026,6 +1027,7 @@ function ErrorState({ message, onRetry }) {
 const PAGE_SIZE = 8;
 
 export default function SessionsPage({ isDark }) {
+  const { authFetch, isAuthenticated } = useAuth();
   const [filters, setFilters] = useState({
     search: "", status: "all", month: null, sort: "nearest",
   });
@@ -1034,7 +1036,6 @@ export default function SessionsPage({ isDark }) {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [createForm, setCreateForm] = useState({
-    managerId: "",
     sessionCode: "",
     minPlayers: "1",
     maxPlayers: "7",
@@ -1043,20 +1044,20 @@ export default function SessionsPage({ isDark }) {
   const { sessions, liveSession, loading, error, total, refetch } = useSessions(filters);
 
   const handleOpenCreate = () => {
+    if (!isAuthenticated) {
+      window.location.href = `/login?redirect=${encodeURIComponent("/sessions")}`;
+      return;
+    }
+
     setCreateError("");
     setShowCreateModal(true);
   };
 
   const handleCreateSession = async () => {
-    const createdByManagerId = Number(createForm.managerId);
     const minPlayers = Number(createForm.minPlayers);
     const maxPlayers = Number(createForm.maxPlayers);
     const sessionCode = createForm.sessionCode.trim();
 
-    if (!Number.isInteger(createdByManagerId) || createdByManagerId <= 0) {
-      setCreateError("Manager ID must be a positive integer.");
-      return;
-    }
     if (!sessionCode) {
       setCreateError("Session code is required.");
       return;
@@ -1079,16 +1080,14 @@ export default function SessionsPage({ isDark }) {
 
     try {
       const { created } = await sessionsService.createSession({
-        createdByManagerId,
         sessionCode,
         minPlayers,
         maxPlayers,
-      });
+      }, authFetch);
 
       await refetch();
       setShowCreateModal(false);
       setCreateForm({
-        managerId: "",
         sessionCode: "",
         minPlayers: "1",
         maxPlayers: "7",
@@ -1365,7 +1364,6 @@ export default function SessionsPage({ isDark }) {
 
               <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
                 {[
-                  { key: "managerId", label: "Manager ID", type: "number", min: 1, placeholder: "e.g. 1" },
                   { key: "sessionCode", label: "Session Code", type: "text", placeholder: "e.g. SESSION-27" },
                   { key: "minPlayers", label: "Min Players", type: "number", min: 1, max: 7 },
                   { key: "maxPlayers", label: "Max Players", type: "number", min: 1, max: 7 },

@@ -1,8 +1,14 @@
 import { Router } from "express";
+import { AUTH_PERMISSIONS } from "../AuthenticationAccessControl/access-control.js";
+import {
+  authenticateStaff,
+  authorizeAnyPermission
+} from "../AuthenticationAccessControl/auth.middleware.js";
 import {
   createSession,
   deleteSession,
   getSessionById,
+  listSessions,
   pauseSession,
   resumeSession,
   terminateSession,
@@ -10,6 +16,16 @@ import {
 } from "./session.service.js";
 
 export const sessionAdministrationRouter = Router();
+
+const requireSessionRead = [
+  authenticateStaff,
+  authorizeAnyPermission(AUTH_PERMISSIONS.SESSION_READ, AUTH_PERMISSIONS.SESSION_MANAGE)
+];
+
+const requireSessionManage = [
+  authenticateStaff,
+  authorizeAnyPermission(AUTH_PERMISSIONS.SESSION_MANAGE)
+];
 
 const parseSessionId = (value) => {
   const sessionId = Number(value);
@@ -22,18 +38,31 @@ const sendError = (res, error, fallbackMessage) => {
   });
 };
 
-// TODO: enforce admin-only access once auth middleware is integrated.
-
-sessionAdministrationRouter.post("/session-administration/sessions", async (req, res) => {
+sessionAdministrationRouter.get("/sessions", async (req, res) => {
   try {
-    const session = await createSession(req.body ?? {});
+    const sessions = await listSessions({
+      month: req.query?.month
+    });
+
+    return res.json({ sessions });
+  } catch (error) {
+    return sendError(res, error, "Failed to load sessions.");
+  }
+});
+
+sessionAdministrationRouter.post("/session-administration/sessions", requireSessionManage, async (req, res) => {
+  try {
+    const session = await createSession({
+      ...(req.body ?? {}),
+      createdByManagerId: req.staff.id
+    });
     return res.status(201).json({ session });
   } catch (error) {
     return sendError(res, error, "Failed to create session.");
   }
 });
 
-sessionAdministrationRouter.patch("/session-administration/sessions/:sessionId", async (req, res) => {
+sessionAdministrationRouter.patch("/session-administration/sessions/:sessionId", requireSessionManage, async (req, res) => {
   const sessionId = parseSessionId(req.params.sessionId);
 
   if (!sessionId) {
@@ -53,7 +82,7 @@ sessionAdministrationRouter.patch("/session-administration/sessions/:sessionId",
   }
 });
 
-sessionAdministrationRouter.delete("/session-administration/sessions/:sessionId", async (req, res) => {
+sessionAdministrationRouter.delete("/session-administration/sessions/:sessionId", requireSessionManage, async (req, res) => {
   const sessionId = parseSessionId(req.params.sessionId);
 
   if (!sessionId) {
@@ -75,6 +104,7 @@ sessionAdministrationRouter.delete("/session-administration/sessions/:sessionId"
 
 sessionAdministrationRouter.post(
   "/session-administration/sessions/:sessionId/pause",
+  requireSessionManage,
   async (req, res) => {
     const sessionId = parseSessionId(req.params.sessionId);
 
@@ -98,6 +128,7 @@ sessionAdministrationRouter.post(
 
 sessionAdministrationRouter.post(
   "/session-administration/sessions/:sessionId/resume",
+  requireSessionManage,
   async (req, res) => {
     const sessionId = parseSessionId(req.params.sessionId);
 
@@ -121,6 +152,7 @@ sessionAdministrationRouter.post(
 
 sessionAdministrationRouter.post(
   "/session-administration/sessions/:sessionId/terminate",
+  requireSessionManage,
   async (req, res) => {
     const sessionId = parseSessionId(req.params.sessionId);
 
@@ -142,7 +174,7 @@ sessionAdministrationRouter.post(
   }
 );
 
-sessionAdministrationRouter.get("/session-administration/sessions/:sessionId", async (req, res) => {
+sessionAdministrationRouter.get("/session-administration/sessions/:sessionId", requireSessionRead, async (req, res) => {
   const sessionId = parseSessionId(req.params.sessionId);
 
   if (!sessionId) {

@@ -1,13 +1,17 @@
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import styles from "./LoginPage.module.css";
 
 function LoginPage() {
+  const { login, logout } = useAuth();
   const [credentials, setCredentials] = useState({
+    accountType: "admin",
     email: "",
     password: "",
     remember: true,
   });
   const [status, setStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (event) => {
     const { name, type, checked, value } = event.target;
@@ -17,9 +21,31 @@ function LoginPage() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setStatus("Access request staged. Connect this form to the auth API when credentials are ready.");
+    setIsSubmitting(true);
+    setStatus("");
+
+    try {
+      if (credentials.accountType === "viewer") {
+        logout();
+        window.location.href = "/";
+        return;
+      }
+
+      await login({
+        identifier: credentials.email,
+        password: credentials.password,
+        remember: credentials.remember,
+      });
+
+      const params = new URLSearchParams(window.location.search);
+      window.location.href = params.get("redirect") || "/dashboard";
+    } catch (error) {
+      setStatus(error?.message ?? "Login failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -49,6 +75,19 @@ function LoginPage() {
           </div>
 
           <label className={styles.field}>
+            <span>Account Type</span>
+            <select
+              name="accountType"
+              value={credentials.accountType}
+              onChange={handleChange}
+              required
+            >
+              <option value="admin">Admin</option>
+              <option value="viewer">Viewer</option>
+            </select>
+          </label>
+
+          <label className={styles.field}>
             <span>Email</span>
             <input
               type="email"
@@ -57,7 +96,7 @@ function LoginPage() {
               onChange={handleChange}
               autoComplete="email"
               placeholder="test@gmail.com"
-              required
+              required={credentials.accountType === "admin"}
             />
           </label>
 
@@ -70,7 +109,7 @@ function LoginPage() {
               onChange={handleChange}
               autoComplete="current-password"
               placeholder="Access phrase"
-              required
+              required={credentials.accountType === "admin"}
             />
           </label>
 
@@ -86,8 +125,8 @@ function LoginPage() {
             </label>
           </div>
 
-          <button type="submit" className={styles.submitButton}>
-            Sign In
+          <button type="submit" className={styles.submitButton} disabled={isSubmitting}>
+            {isSubmitting ? "Signing In..." : "Sign In"}
           </button>
 
           <p className={styles.switchPrompt}>
