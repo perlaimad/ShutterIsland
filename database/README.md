@@ -7,4 +7,10 @@ Use these files as the database source of truth:
 
 Run `schema.sql` first, then `data.sql`.
 
-The game session timer columns are included directly on `game_session`.
+## Includes
+- Session/gameplay tables (`game_session`, `session_player`, `session_room`, `elimination`,
+  `environment_event`)
+- Streaming/access/betting tables (`live_stream`, `viewer_access_key`, `bet`)
+- Arena geometry tables (`arena_zone`, `arena_marker`, `arena_obstacle`)
+- Audit table (`audit_log`)
+

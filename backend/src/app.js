@@ -6,7 +6,11 @@ import { env } from "./config/env.js";
 
 export const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  })
+);
 app.use(express.json());
 
 app.use(healthRouter);
@@ -16,5 +20,15 @@ app.use((req, res) => {
   res.status(404).json({
     message: "Route not found",
     path: req.originalUrl
+  });
+});
+
+app.use((error, _req, res, _next) => {
+  if (error instanceof SyntaxError && "body" in error) {
+    return res.status(400).json({ message: "Invalid JSON request body." });
+  }
+
+  return res.status(error.statusCode ?? 500).json({
+    message: error.message ?? "Internal server error."
   });
 });

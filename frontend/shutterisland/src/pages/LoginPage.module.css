@@ -1,0 +1,298 @@
+.page {
+  --raspberry: #870058;
+  --cherry: #A4303F;
+  --papaya: #FFECCC;
+  --cream: #fff8f0;
+  --paper: #fdf4e7;
+  --ink: #2e1a10;
+  --muted: rgba(46, 26, 16, 0.58);
+  min-height: calc(100vh - 80px);
+  display: grid;
+  place-items: center;
+  padding: 48px 24px;
+  background:
+    linear-gradient(90deg, rgba(164, 48, 63, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(164, 48, 63, 0.07) 1px, transparent 1px),
+    var(--cream);
+  background-size: 42px 42px;
+  color: var(--ink);
+}
+
+:global(html.dark) .page {
+  --cream: #140b08;
+  --paper: #21120d;
+  --ink: #f2d0a4;
+  --muted: rgba(255, 236, 204, 0.62);
+  background:
+    linear-gradient(90deg, rgba(164, 48, 63, 0.14) 1px, transparent 1px),
+    linear-gradient(rgba(164, 48, 63, 0.12) 1px, transparent 1px),
+    #140b08;
+}
+
+.shell {
+  width: min(960px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.05fr);
+  border: 1px solid rgba(164, 48, 63, 0.2);
+  background: rgba(253, 244, 231, 0.86);
+  box-shadow: 0 22px 70px rgba(46, 26, 16, 0.15);
+}
+
+:global(html.dark) .shell {
+  background: rgba(26, 15, 11, 0.9);
+  border-color: rgba(164, 48, 63, 0.42);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+}
+
+.accessPanel,
+.formPanel {
+  padding: clamp(28px, 5vw, 48px);
+}
+
+.accessPanel {
+  border-right: 1px solid rgba(164, 48, 63, 0.18);
+  background: linear-gradient(180deg, rgba(164, 48, 63, 0.06), rgba(135, 0, 88, 0.05));
+}
+
+:global(html.dark) .accessPanel {
+  border-right-color: rgba(164, 48, 63, 0.42);
+  background: linear-gradient(180deg, rgba(164, 48, 63, 0.14), rgba(135, 0, 88, 0.1));
+}
+
+.homeLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cherry);
+  transition: color 0.16s, transform 0.16s;
+}
+
+.homeLink:hover,
+.homeLink:focus-visible {
+  color: var(--raspberry);
+  transform: translateX(-2px);
+}
+
+.homeLink span {
+  font-size: 14px;
+  line-height: 1;
+}
+
+:global(html.dark) .homeLink {
+  color: #f0a5b8;
+}
+
+:global(html.dark) .homeLink:hover,
+:global(html.dark) .homeLink:focus-visible {
+  color: #ffeccc;
+}
+
+.brandLock {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(164, 48, 63, 0.34);
+  background: var(--paper);
+  color: var(--raspberry);
+  font-family: "Cinzel Decorative", serif;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 30px;
+}
+
+.eyebrow,
+.formKicker {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cherry);
+}
+
+.title {
+  margin-top: 12px;
+  font-family: "Cinzel Decorative", serif;
+  font-size: clamp(38px, 6vw, 64px);
+  line-height: 1;
+}
+
+.copy {
+  max-width: 340px;
+  margin-top: 18px;
+  font-family: "Cinzel", serif;
+  font-size: 12px;
+  line-height: 1.9;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.formPanel {
+  background: var(--paper);
+}
+
+.formHeader {
+  margin-bottom: 24px;
+}
+
+.formHeader h2 {
+  margin-top: 8px;
+  font-family: "Cinzel", serif;
+  font-size: 22px;
+  color: var(--ink);
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.field span {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(164, 48, 63, 0.24);
+  border-radius: 3px;
+  background: rgba(255, 248, 240, 0.78);
+  color: var(--ink);
+  padding: 0 14px;
+  outline: none;
+  transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
+}
+
+.field select {
+  cursor: pointer;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: var(--cherry);
+  box-shadow: 0 0 0 3px rgba(164, 48, 63, 0.12);
+  background: rgba(255, 248, 240, 0.98);
+}
+
+:global(html.dark) .field input,
+:global(html.dark) .field select {
+  background: rgba(20, 11, 8, 0.72);
+  border-color: rgba(164, 48, 63, 0.48);
+}
+
+:global(html.dark) .field input:focus,
+:global(html.dark) .field select:focus {
+  background: rgba(20, 11, 8, 0.96);
+}
+
+.formOptions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  margin: 6px 0 22px;
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.checkRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkRow input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--cherry);
+}
+
+.submitButton {
+  width: 100%;
+  min-height: 50px;
+  border: none;
+  border-radius: 3px;
+  background: var(--raspberry);
+  color: var(--papaya);
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.16s, transform 0.16s;
+}
+
+.submitButton:hover,
+.submitButton:focus-visible {
+  background: var(--cherry);
+  transform: translateY(-1px);
+}
+
+.switchPrompt {
+  margin-top: 16px;
+  text-align: center;
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.switchPrompt a {
+  color: var(--cherry);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.statusMessage {
+  margin-top: 14px;
+  border: 1px solid rgba(69, 176, 108, 0.28);
+  background: rgba(69, 176, 108, 0.08);
+  color: #2c7c48;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+:global(html.dark) .statusMessage {
+  color: #99d8ae;
+  border-color: rgba(153, 216, 174, 0.34);
+  background: rgba(69, 176, 108, 0.12);
+}
+
+@media (max-width: 780px) {
+  .page {
+    align-items: start;
+    padding: 28px 14px;
+  }
+
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .accessPanel {
+    border-right: none;
+    border-bottom: 1px solid rgba(164, 48, 63, 0.18);
+  }
+
+  .formOptions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
