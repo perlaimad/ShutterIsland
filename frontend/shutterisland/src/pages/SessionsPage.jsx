@@ -13,12 +13,13 @@
  * -----------------------------------------------
  */
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 
 /* ============================================================
    1. CONFIGURATION
    ============================================================ */
-const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL ?? "/api";
+const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL
+  ?? `${import.meta?.env?.VITE_API_URL ?? "http://localhost:4000"}/api`;
 
 function mapBackendStatusToCardStatus(status) {
   const normalized = String(status || "").trim().toLowerCase();
@@ -100,45 +101,124 @@ const MOCK_SESSIONS = [
   },
 ];
 
+function normalizeSession(session) {
+  return {
+    id: session.id ?? String(session.sessionId ?? session.session_id ?? ""),
+    code: session.code ?? session.romanId ?? session.sessionCode ?? session.id ?? "",
+    date: session.date ?? (session.startsAt ? String(session.startsAt).slice(0, 10) : ""),
+    time: session.time ?? (session.startsAt ? new Date(session.startsAt).toISOString().slice(11, 16) : ""),
+    status: session.status ?? "upcoming",
+    players: Number(session.players ?? session.playerCount ?? 0),
+    capacity: Number(session.capacity ?? session.maxPlayers ?? 0),
+    note: session.note
+      ?? (session.statusLabel
+        ? session.statusLabel
+        : session.status === "live"
+          ? "Live Now"
+          : session.status === "open"
+            ? "Booking Open"
+            : session.status === "finished"
+              ? "Concluded"
+              : "Opens Soon"),
+    winner: session.winner ?? null,
+    duration: session.duration ?? null,
+    pool: session.pool ?? "TBD",
+    timeLeft: session.timeLeft ?? null,
+    round: session.round ?? null,
+    spotsLeft: session.spotsLeft ?? Math.max(0, Number(session.capacity ?? 0) - Number(session.players ?? 0)),
+    rawStatus: session.rawStatus ?? null,
+    startsAt: session.startsAt ?? null,
+    endedAt: session.endedAt ?? null,
+  };
+}
+
+function filterSessions(sessions, params = {}) {
+  let data = [...sessions];
+
+  if (params.status && params.status !== "all") {
+    data = data.filter((session) => session.status === params.status);
+  }
+
+  if (params.search) {
+    const query = params.search.toLowerCase();
+    data = data.filter((session) =>
+      session.code.toLowerCase().includes(query)
+      || session.id.toLowerCase().includes(query)
+      || session.date.includes(query)
+    );
+  }
+
+  if (params.month !== undefined && params.month !== null) {
+    data = data.filter((session) => {
+      const month = new Date(session.date).getMonth();
+      return month === params.month;
+    });
+  }
+
+  if (params.sort === "newest") {
+    data = data.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  } else {
+    data = data.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+  }
+
+  return data;
+}
+
+async function fetchJson(path) {
+  const response = await fetch(`${API_BASE_URL}${path}`);
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
 const sessionsService = {
   async getSessions(params = {}) {
-    // Replace with: const res = await fetch(`${API_BASE_URL}/sessions?${new URLSearchParams(params)}`);
-    await new Promise((r) => setTimeout(r, 720)); // simulate latency
-    let data = [...MOCK_SESSIONS];
-    if (params.status && params.status !== "all") {
-      data = data.filter((s) => s.status === params.status);
+    try {
+      const query = new URLSearchParams();
+
+      if (params.month !== undefined && params.month !== null) {
+        query.set("month", `2026-${String(params.month + 1).padStart(2, "0")}`);
+      }
+
+      const payload = await fetchJson(`/sessions${query.toString() ? `?${query.toString()}` : ""}`);
+      const sessions = Array.isArray(payload?.sessions)
+        ? payload.sessions.map(normalizeSession)
+        : [];
+      const filtered = filterSessions(sessions, params);
+
+      return {
+        sessions: filtered,
+        total: filtered.length,
+      };
+    } catch {
+      const fallback = filterSessions(MOCK_SESSIONS, params);
+      return { sessions: fallback, total: fallback.length };
     }
-    if (params.search) {
-      const q = params.search.toLowerCase();
-      data = data.filter(
-        (s) =>
-          s.code.toLowerCase().includes(q) ||
-          s.id.toLowerCase().includes(q) ||
-          s.date.includes(q)
-      );
-    }
-    if (params.month !== undefined && params.month !== null) {
-      data = data.filter((s) => {
-        const m = new Date(s.date).getMonth();
-        return m === params.month;
-      });
-    }
-    if (params.sort === "newest") {
-      data = data.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
-    } else {
-      data = data.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
-    }
-    return { sessions: data, total: data.length };
   },
 
   async getLiveSession() {
-    await new Promise((r) => setTimeout(r, 300));
-    return MOCK_SESSIONS.find((s) => s.status === "live") ?? null;
+    try {
+      const payload = await fetchJson("/sessions");
+      const sessions = Array.isArray(payload?.sessions)
+        ? payload.sessions.map(normalizeSession)
+        : [];
+
+      return sessions.find((session) => session.status === "live") ?? null;
+    } catch {
+      return MOCK_SESSIONS.find((session) => session.status === "live") ?? null;
+    }
   },
 
   async getSessionById(id) {
-    await new Promise((r) => setTimeout(r, 400));
-    return MOCK_SESSIONS.find((s) => s.id === id || s.code === id) ?? null;
+    try {
+      const payload = await fetchJson(`/sessions/${encodeURIComponent(id)}`);
+      return payload?.session ? normalizeSession(payload.session) : null;
+    } catch {
+      return MOCK_SESSIONS.find((session) => session.id === id || session.code === id) ?? null;
+    }
   },
 
   async createSession(payload) {
@@ -865,7 +945,7 @@ function SessionTimeline({ sessions }) {
           background: "rgba(93,80,60,0.2)", zIndex: 0,
         }} />
 
-        {sorted.map((session, i) => (
+        {sorted.map((session) => (
           <div key={session.id} style={{
             display: "flex", flexDirection: "column", alignItems: "center",
             gap: 8, minWidth: 64, position: "relative", zIndex: 1,
@@ -1027,6 +1107,10 @@ export default function SessionsPage({ isDark }) {
 
   // Reset page on filter change
   useEffect(() => { setPage(1); }, [JSON.stringify(filters)]);
+  const handleFiltersChange = useCallback((nextFilters) => {
+    setFilters(nextFilters);
+    setPage(1);
+  }, []);
 
   const paginated = useMemo(() => sessions.slice(0, page * PAGE_SIZE), [sessions, page]);
   const hasMore = paginated.length < sessions.length;
@@ -1132,7 +1216,7 @@ export default function SessionsPage({ isDark }) {
           {/* ── FILTERS ── */}
           <SessionFilters
             filters={filters}
-            onChange={setFilters}
+            onChange={handleFiltersChange}
           />
 
           {/* ── RESULTS COUNT ── */}
@@ -1190,7 +1274,7 @@ export default function SessionsPage({ isDark }) {
           )}
 
           {!loading && !error && sessions.length === 0 && (
-            <EmptyState onClear={() => setFilters({ search: "", status: "all", month: null, sort: "nearest" })} />
+            <EmptyState onClear={() => handleFiltersChange({ search: "", status: "all", month: null, sort: "nearest" })} />
           )}
 
           {/* ── SESSIONS GRID ── */}

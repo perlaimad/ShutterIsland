@@ -4,6 +4,8 @@ import HomePage from "./pages/HomePage";
 import SessionsPage from "./pages/SessionsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import SessionDetailsPage from "./pages/SessionDetailsPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 
 const HOME_TICKER_ITEMS = homepageData.tickerMessages.map((message) =>
   message.replace("{minutes}", "4"),
@@ -29,6 +31,28 @@ const ADMIN_TICKER_ITEMS = [
   "MONITORING SESSIONS LIVE",
   "TRACKING PARTICIPANTS",
   "SYSTEM STATUS NORMAL",
+];
+
+const LOGIN_TICKER_ITEMS = [
+  "SECURE ACCESS REQUIRED",
+  "OPERATOR SIGN-IN OPEN",
+  "SESSION GATE LOCKED",
+  "AUTHENTICATE TO ENTER",
+  "SECURE ACCESS REQUIRED",
+  "OPERATOR SIGN-IN OPEN",
+  "SESSION GATE LOCKED",
+  "AUTHENTICATE TO ENTER",
+];
+
+const REGISTER_TICKER_ITEMS = [
+  "NEW OPERATOR REGISTRATION",
+  "ACCESS REVIEW REQUIRED",
+  "SECURE PROFILE CREATION",
+  "ARENA ACCOUNT REQUEST",
+  "NEW OPERATOR REGISTRATION",
+  "ACCESS REVIEW REQUIRED",
+  "SECURE PROFILE CREATION",
+  "ARENA ACCOUNT REQUEST",
 ];
 
 function resolvePage(pathname) {
@@ -67,6 +91,28 @@ function resolvePage(pathname) {
           round: "—",
         },
         render: () => <AdminDashboard />,
+      };
+
+    case "/login":
+      return {
+        tickerItems: LOGIN_TICKER_ITEMS,
+        statusBarProps: {
+          sessionLabel: "ACCESS",
+          playersActive: "LOCKED",
+          round: "AUTH",
+        },
+        render: () => <LoginPage />,
+      };
+
+    case "/register":
+      return {
+        tickerItems: REGISTER_TICKER_ITEMS,
+        statusBarProps: {
+          sessionLabel: "ACCESS",
+          playersActive: "REQUEST",
+          round: "NEW",
+        },
+        render: () => <RegisterPage />,
       };
 
     case "/":
