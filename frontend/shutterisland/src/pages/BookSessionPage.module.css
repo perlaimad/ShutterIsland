@@ -1,0 +1,495 @@
+/* ============================================================
+   BookSessionPage.module.css
+   Aligned to the Shutter Island design system.
+   Light-mode ground truth: HomePage.module.css
+   Key corrections from previous version:
+     - background: #fff8f0 (cream), NOT a dark warm gradient
+     - panels: background #fdf4e7, border rgba(164,48,63,0.15), radius 3px
+     - NO large box-shadows / floating card feel
+     - NO rounded-pill (22px) card borders — all radii 2–4px
+     - inputs: background #fff8f0, border rgba(164,48,63,0.18), radius 3px
+     - buttons: sharp 2–3px radius, matching .btnArena / .navCta style
+     - typography: Cinzel / Cinzel Decorative, same scale as rest of app
+   ============================================================ */
+
+/* ── PAGE SHELL ────────────────────────────────────────────── */
+.page {
+  min-height: calc(100vh - 80px);
+  background: #fff8f0;
+  color: #2e1a10;
+  padding: 32px 28px 56px;
+}
+
+.shell {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 20px;
+}
+
+/* ── SHARED SURFACES ───────────────────────────────────────── */
+.headerCard,
+.panel,
+.summaryCard,
+.stateCard {
+  background: #fdf4e7;
+  border: 1px solid rgba(164, 48, 63, 0.15);
+  border-radius: 3px;
+}
+
+/* ── HEADER CARD ───────────────────────────────────────────── */
+.headerCard {
+  padding: 22px 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* ── TYPOGRAPHY TOKENS ─────────────────────────────────────── */
+.eyebrow,
+.panelTitle,
+.summaryLabel,
+.fieldLabel,
+.referenceLabel {
+  font-family: "Cinzel", serif;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  color: rgba(94, 42, 29, 0.58);
+  margin-bottom: 10px;
+}
+
+.title {
+  font-family: "Cinzel Decorative", serif;
+  font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+  line-height: 1.1;
+  color: #2e1a10;
+  margin-bottom: 12px;
+}
+
+.headerMeta,
+.headerActions,
+.formRow,
+.formFoot,
+.panelHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.metaText,
+.summaryHint,
+.panelSub,
+.formHint {
+  color: rgba(46, 26, 16, 0.65);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+/* ── BUTTONS ───────────────────────────────────────────────── */
+/*
+  Matches .navCta (primary) and .btnPlayers (secondary) from HomePage:
+  - sharp 2–3px radius
+  - Cinzel font, 10–11px, letter-spacing 0.12–0.14em
+  - no pill shape
+*/
+.secondaryButton {
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 3px;
+  border: 1px solid rgba(164, 48, 63, 0.35);
+  background: transparent;
+  color: #870058;
+  font-family: "Cinzel", serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.secondaryButton:hover {
+  background: rgba(135, 0, 88, 0.06);
+  border-color: #870058;
+}
+
+.primaryButton {
+  min-height: 36px;
+  padding: 0 22px;
+  border-radius: 2px;
+  border: none;
+  background: #870058;
+  color: #FFECCC;
+  font-family: "Cinzel", serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.primaryButton:hover {
+  background: #A4303F;
+}
+
+/* ── STATUS BADGES ─────────────────────────────────────────── */
+/*
+  Matches .sessionBadgeLive / .sessionBadgeOpen / etc from HomePage
+*/
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 2px;
+  font-family: "Cinzel", serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.open {
+  color: #2c7c48;
+  background: rgba(69, 176, 108, 0.1);
+  border-color: rgba(69, 176, 108, 0.26);
+}
+
+.upcoming {
+  color: #A4303F;
+  background: transparent;
+  border-color: rgba(164, 48, 63, 0.4);
+}
+
+.active {
+  color: #FFECCC;
+  background: #870058;
+}
+
+.finished {
+  color: rgba(46, 26, 16, 0.45);
+  background: transparent;
+}
+
+.paused {
+  color: #7a5c1a;
+  background: rgba(212, 196, 122, 0.14);
+  border-color: rgba(212, 196, 122, 0.26);
+}
+
+.cancelled {
+  color: #8b243c;
+  background: rgba(164, 48, 63, 0.08);
+  border-color: rgba(164, 48, 63, 0.18);
+}
+
+.waiting {
+  color: rgba(94, 42, 29, 0.6);
+  background: rgba(164, 48, 63, 0.06);
+  border-color: rgba(164, 48, 63, 0.14);
+}
+
+/* ── SUMMARY GRID ──────────────────────────────────────────── */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.summaryCard {
+  padding: 16px 18px;
+}
+
+.summaryLabel,
+.fieldLabel,
+.referenceLabel {
+  font-size: 0.72rem;
+  color: rgba(94, 42, 29, 0.55);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.summaryValue {
+  font-family: "Cinzel Decorative", serif;
+  font-size: clamp(1.3rem, 2vw, 1.8rem);
+  line-height: 1.1;
+  color: #2e1a10;
+}
+
+.summaryHint {
+  margin-top: 8px;
+}
+
+
+
+.panel {
+  padding: 20px 22px;
+}
+
+.panelHeader {
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.panelTitle {
+  font-size: 0.85rem;
+  color: #A4303F;
+}
+
+.panelSub {
+  font-size: 0.8rem;
+  margin-top: 3px;
+}
+
+/* ── REFERENCE STRIP (session context cards inside form) ───── */
+.referenceStrip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.referenceCard {
+  background: #fff8f0;
+  border: 1px solid rgba(164, 48, 63, 0.12);
+  border-radius: 3px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.referenceValue {
+  color: #2e1a10;
+  font-family: "Cinzel", serif;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+/* ── FORM FIELDS ───────────────────────────────────────────── */
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.input {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 3px;
+  border: 1px solid rgba(164, 48, 63, 0.18);
+  background: #fff8f0;
+  color: #2e1a10;
+  padding: 0 14px;
+  font-family: "Cinzel", serif;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.input:focus {
+  border-color: rgba(164, 48, 63, 0.42);
+  box-shadow: 0 0 0 3px rgba(164, 48, 63, 0.07);
+}
+
+.input::placeholder {
+  color: rgba(94, 42, 29, 0.38);
+  font-family: "Cinzel", serif;
+}
+
+.textarea {
+  min-height: 110px;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+/* ── FORM FOOT ─────────────────────────────────────────────── */
+.formFoot {
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.formHint {
+  flex: 1;
+}
+
+/* ── NOTICE / STATE ────────────────────────────────────────── */
+.notice,
+.stateCard {
+  padding: 14px 18px;
+  border-radius: 3px;
+  border: 1px solid rgba(164, 48, 63, 0.14);
+  background: #fff8f0;
+  color: rgba(46, 26, 16, 0.72);
+  font-family: "Cinzel", serif;
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
+  line-height: 1.65;
+}
+
+/* ── DARK MODE ─────────────────────────────────────────────── */
+:global(html.dark) .page {
+  background: #140b08;
+  color: #ffe6c3;
+}
+
+:global(html.dark) .headerCard,
+:global(html.dark) .panel,
+:global(html.dark) .summaryCard,
+:global(html.dark) .stateCard,
+:global(html.dark) .notice {
+  background: #21120d;
+  border-color: rgba(164, 48, 63, 0.35);
+}
+
+:global(html.dark) .title,
+:global(html.dark) .summaryValue,
+:global(html.dark) .referenceValue {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .metaText,
+:global(html.dark) .summaryHint,
+:global(html.dark) .panelSub,
+:global(html.dark) .fieldLabel,
+:global(html.dark) .formHint,
+:global(html.dark) .referenceLabel,
+:global(html.dark) .eyebrow,
+:global(html.dark) .summaryLabel {
+  color: rgba(255, 230, 195, 0.62);
+}
+
+:global(html.dark) .secondaryButton {
+  background: transparent;
+  border-color: rgba(164, 48, 63, 0.5);
+  color: rgba(255, 236, 204, 0.62);
+}
+
+:global(html.dark) .secondaryButton:hover {
+  background: rgba(164, 48, 63, 0.18);
+  color: #f0a5b8;
+}
+
+:global(html.dark) .referenceCard {
+  background: #1a0f0b;
+  border-color: rgba(164, 48, 63, 0.28);
+}
+
+:global(html.dark) .input {
+  background: #1a0f0b;
+  border-color: rgba(164, 48, 63, 0.28);
+  color: #ffe6c3;
+}
+
+:global(html.dark) .input:focus {
+  border-color: rgba(164, 48, 63, 0.55);
+  box-shadow: 0 0 0 3px rgba(164, 48, 63, 0.1);
+}
+
+:global(html.dark) .input::placeholder {
+  color: rgba(255, 236, 204, 0.32);
+}
+
+:global(html.dark) .panelTitle {
+  color: #e894a8;
+}
+
+:global(html.dark) .notice,
+:global(html.dark) .stateCard {
+  color: rgba(255, 236, 204, 0.62);
+}
+
+:global(html.dark) .open {
+  color: #99d8ae;
+  background: rgba(69, 176, 108, 0.14);
+  border-color: rgba(153, 216, 174, 0.28);
+}
+
+:global(html.dark) .upcoming {
+  color: #f0a5b8;
+  border-color: rgba(240, 165, 184, 0.35);
+}
+
+:global(html.dark) .active {
+  background: #A4303F;
+  color: #FFECCC;
+}
+
+:global(html.dark) .finished {
+  color: rgba(255, 236, 204, 0.38);
+}
+
+:global(html.dark) .paused {
+  color: #d4c47a;
+  background: rgba(212, 196, 122, 0.12);
+  border-color: rgba(212, 196, 122, 0.24);
+}
+
+:global(html.dark) .cancelled {
+  color: #e894a8;
+  background: rgba(164, 48, 63, 0.14);
+  border-color: rgba(232, 148, 168, 0.25);
+}
+
+:global(html.dark) .waiting {
+  color: rgba(255, 236, 204, 0.45);
+  background: rgba(164, 48, 63, 0.08);
+  border-color: rgba(164, 48, 63, 0.18);
+}
+
+/* ── RESPONSIVE ────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .summaryGrid,
+  .referenceStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .page {
+    padding: 18px 14px 40px;
+  }
+
+  .headerCard,
+  .formFoot {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .summaryGrid,
+  .referenceStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .formRow {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .headerActions,
+  .secondaryButton,
+  .primaryButton {
+    width: 100%;
+  }
+}

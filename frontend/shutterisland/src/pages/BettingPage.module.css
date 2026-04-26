@@ -1,0 +1,512 @@
+/* ============================================================
+   BettingPage.module.css
+   Aligned to the Shutter Island design system.
+   Light-mode ground truth: HomePage.module.css
+   Key corrections from previous version:
+     - background: #fff8f0 (cream), NOT a dark radial gradient
+     - panels: background #fdf4e7, border rgba(164,48,63,0.15), radius 3px
+     - NO large box-shadows or floating card effect
+     - NO rounded-pill (22px) borders — all radii are 2–4px
+     - typography unchanged (Cinzel, same sizes)
+   ============================================================ */
+
+/* ── PAGE SHELL ────────────────────────────────────────────── */
+.page {
+  min-height: calc(100vh - 80px);
+  background: #fff8f0;
+  color: #2e1a10;
+  padding: 32px 28px 56px;
+}
+
+.shell {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 20px;
+}
+
+/* ── SHARED SURFACE ────────────────────────────────────────── */
+.headerCard,
+.panel,
+.summaryCard,
+.stateCard,
+.emptyState {
+  background: #fdf4e7;
+  border: 1px solid rgba(164, 48, 63, 0.15);
+  border-radius: 3px;
+}
+
+/* ── HEADER CARD ───────────────────────────────────────────── */
+.headerCard {
+  padding: 22px 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* ── TYPOGRAPHY ────────────────────────────────────────────── */
+.eyebrow,
+.panelTitle,
+.summaryLabel,
+.marketEyebrow {
+  font-family: "Cinzel", serif;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  color: rgba(94, 42, 29, 0.62);
+  margin-bottom: 10px;
+}
+
+.title {
+  font-family: "Cinzel Decorative", serif;
+  font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+  line-height: 1.1;
+  color: #2e1a10;
+  margin-bottom: 12px;
+}
+
+.headerMeta,
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.metaText,
+.summaryHint,
+.panelSub,
+.marketText,
+.marketCardText,
+.contenderMeta,
+.contenderBottom,
+.activityText {
+  color: rgba(46, 26, 16, 0.68);
+  font-size: 0.88rem;
+}
+
+/* ── BUTTONS ───────────────────────────────────────────────── */
+.secondaryButton {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid rgba(164, 48, 63, 0.28);
+  border-radius: 3px;
+  background: transparent;
+  color: rgba(46, 26, 16, 0.7);
+  font-family: "Cinzel", serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.secondaryButton:hover {
+  background: rgba(164, 48, 63, 0.06);
+  border-color: rgba(164, 48, 63, 0.4);
+  color: #A4303F;
+}
+
+/* ── STATUS BADGES ─────────────────────────────────────────── */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 2px;
+  font-family: "Cinzel", serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.active {
+  color: #fff3ea;
+  background: #A4303F;
+}
+
+.finished {
+  color: #2c7c48;
+  background: rgba(69, 176, 108, 0.12);
+  border-color: rgba(69, 176, 108, 0.28);
+}
+
+.paused {
+  color: #7a5c1a;
+  background: rgba(212, 196, 122, 0.16);
+  border-color: rgba(212, 196, 122, 0.28);
+}
+
+.cancelled {
+  color: #8b243c;
+  background: rgba(164, 48, 63, 0.1);
+  border-color: rgba(164, 48, 63, 0.2);
+}
+
+.waiting {
+  color: rgba(94, 42, 29, 0.65);
+  background: rgba(164, 48, 63, 0.07);
+  border-color: rgba(164, 48, 63, 0.14);
+}
+
+/* ── SUMMARY GRID ──────────────────────────────────────────── */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.summaryCard {
+  padding: 16px 18px;
+}
+
+.summaryLabel {
+  font-size: 0.72rem;
+  color: rgba(94, 42, 29, 0.55);
+  margin-bottom: 8px;
+}
+
+.summaryValue,
+.snapshotValue {
+  font-family: "Cinzel Decorative", serif;
+  font-size: clamp(1.3rem, 2vw, 1.8rem);
+  line-height: 1.1;
+  color: #2e1a10;
+}
+
+.summaryHint {
+  margin-top: 8px;
+  font-size: 0.82rem;
+}
+
+/* ── CONTENT GRID ──────────────────────────────────────────── */
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 16px;
+}
+
+/* ── PANELS ────────────────────────────────────────────────── */
+.panel {
+  padding: 18px 20px;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.panelTitle {
+  font-size: 0.85rem;
+  color: #A4303F;
+}
+
+.panelSub,
+.marketEyebrow {
+  font-size: 0.78rem;
+}
+
+/* ── CONTENDER CARDS ───────────────────────────────────────── */
+.contenderGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.contenderCard {
+  border: 1px solid rgba(164, 48, 63, 0.12);
+  background: #fff8f0;
+  border-radius: 3px;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.contenderLeader {
+  border-left: 2px solid #A4303F;
+}
+
+.contenderTop,
+.contenderBottom,
+.marketCardTop,
+.activityItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.contenderName,
+.activityTitle,
+.marketTitle,
+.marketCardTitle {
+  font-family: "Cinzel", serif;
+}
+
+.contenderName {
+  font-size: 0.95rem;
+  color: #2e1a10;
+}
+
+.contenderMeta,
+.contenderBottom,
+.activityText,
+.marketCardText,
+.marketText {
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.contenderOdds,
+.marketState {
+  font-family: "Cinzel", serif;
+  font-size: 0.78rem;
+  color: #A4303F;
+  background: rgba(164, 48, 63, 0.08);
+  border: 1px solid rgba(164, 48, 63, 0.2);
+  border-radius: 2px;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+
+.contenderBarTrack {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(164, 48, 63, 0.1);
+  overflow: hidden;
+}
+
+.contenderBarFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #A4303F 0%, #d48f5b 100%);
+}
+
+.inlineLink {
+  color: #870058;
+  text-decoration: none;
+}
+
+/* ── ACTIVITY LOG ──────────────────────────────────────────── */
+.activityList {
+  display: grid;
+  gap: 10px;
+}
+
+.activityItem {
+  align-items: flex-start;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(164, 48, 63, 0.1);
+}
+
+.activityItem:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.activityTime {
+  min-width: 110px;
+  font-family: "Cinzel", serif;
+  font-size: 0.75rem;
+  color: rgba(94, 42, 29, 0.52);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── MARKET PANEL ──────────────────────────────────────────── */
+.marketPanel {
+  display: grid;
+  gap: 14px;
+}
+
+.marketBanner {
+  border: 1px solid rgba(164, 48, 63, 0.14);
+  background: #fff8f0;
+  border-radius: 3px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.marketEyebrow {
+  color: #870058;
+}
+
+.marketTitle {
+  font-size: 1.1rem;
+}
+
+.marketGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.marketCard {
+  border: 1px solid rgba(164, 48, 63, 0.1);
+  background: #fff8f0;
+  border-radius: 3px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.marketButton {
+  min-height: 36px;
+  border-radius: 3px;
+  border: 1px solid rgba(164, 48, 63, 0.18);
+  background: transparent;
+  color: rgba(94, 42, 29, 0.65);
+  font-family: "Cinzel", serif;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.marketButton:hover {
+  background: rgba(164, 48, 63, 0.06);
+  border-color: rgba(164, 48, 63, 0.32);
+}
+
+/* ── STATE / EMPTY ─────────────────────────────────────────── */
+.stateCard,
+.emptyState {
+  padding: 18px 20px;
+  color: rgba(94, 42, 29, 0.65);
+  font-family: "Cinzel", serif;
+  font-size: 0.88rem;
+  letter-spacing: 0.06em;
+}
+
+/* ── DARK MODE ─────────────────────────────────────────────── */
+:global(html.dark) .page {
+  background: #140b08;
+  color: #ffe6c3;
+}
+
+:global(html.dark) .headerCard,
+:global(html.dark) .panel,
+:global(html.dark) .summaryCard,
+:global(html.dark) .stateCard,
+:global(html.dark) .emptyState {
+  background: #21120d;
+  border-color: rgba(164, 48, 63, 0.38);
+}
+
+:global(html.dark) .title,
+:global(html.dark) .summaryValue,
+:global(html.dark) .contenderName,
+:global(html.dark) .marketTitle,
+:global(html.dark) .marketCardTitle,
+:global(html.dark) .activityTitle,
+:global(html.dark) .snapshotValue {
+  color: #ffe6c3;
+}
+
+:global(html.dark) .metaText,
+:global(html.dark) .summaryHint,
+:global(html.dark) .panelSub,
+:global(html.dark) .marketText,
+:global(html.dark) .marketCardText,
+:global(html.dark) .contenderMeta,
+:global(html.dark) .contenderBottom,
+:global(html.dark) .activityText,
+:global(html.dark) .activityTime,
+:global(html.dark) .summaryLabel,
+:global(html.dark) .eyebrow {
+  color: rgba(255, 230, 195, 0.62);
+}
+
+:global(html.dark) .secondaryButton {
+  background: transparent;
+  border-color: rgba(164, 48, 63, 0.42);
+  color: rgba(255, 236, 204, 0.65);
+}
+
+:global(html.dark) .secondaryButton:hover {
+  background: rgba(164, 48, 63, 0.18);
+  color: #f0a5b8;
+}
+
+:global(html.dark) .contenderCard,
+:global(html.dark) .marketCard,
+:global(html.dark) .marketBanner {
+  background: #1a0f0b;
+  border-color: rgba(164, 48, 63, 0.28);
+}
+
+:global(html.dark) .contenderLeader {
+  border-left-color: #f0a5b8;
+}
+
+:global(html.dark) .marketButton,
+:global(html.dark) .contenderOdds,
+:global(html.dark) .marketState {
+  background: rgba(164, 48, 63, 0.14);
+  border-color: rgba(240, 165, 184, 0.22);
+  color: #f0a5b8;
+}
+
+:global(html.dark) .activityItem {
+  border-bottom-color: rgba(164, 48, 63, 0.22);
+}
+
+:global(html.dark) .panelTitle {
+  color: #e894a8;
+}
+
+:global(html.dark) .marketEyebrow {
+  color: #f0a5b8;
+}
+
+/* ── RESPONSIVE ────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .summaryGrid,
+  .marketGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .contentGrid,
+  .contenderGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .page {
+    padding: 18px 14px 40px;
+  }
+
+  .headerCard {
+    padding: 16px 14px;
+    flex-direction: column;
+  }
+
+  .summaryGrid,
+  .marketGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .activityItem,
+  .marketCardTop,
+  .contenderTop,
+  .contenderBottom,
+  .panelHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
