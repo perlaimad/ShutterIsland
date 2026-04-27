@@ -21,7 +21,14 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL ?? "/api";
 
 function getSessionHref(session) {
-  const identifier = session?.code ?? session?.sessionCode ?? session?.id ?? "";
+  const legacyIdMatch = String(session?.id ?? "").match(/^SI-(\d+)$/i);
+  const identifier = session?.sessionId
+    ?? session?.session_id
+    ?? (legacyIdMatch ? String(Number(legacyIdMatch[1])) : null)
+    ?? session?.code
+    ?? session?.sessionCode
+    ?? session?.id
+    ?? "";
   return `/sessions/${encodeURIComponent(identifier)}`;
 }
 
